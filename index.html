@@ -588,10 +588,10 @@ window.submitScore=run(async id=>{
 });
 
 // ---------- results (administrator and auditors) ----------
-const auditorBox=()=>'<div style="max-width:340px;margin:18px auto 0;text-align:left"><b>Auditor sign-in</b><div class="muted" style="margin:2px 0 6px">Legal Services and Internal Audit reviewers (read-only).</div><input id="audName" placeholder="Your name" autocomplete="off"><input id="audCode" type="password" placeholder="Your code" autocomplete="new-password" style="margin-top:8px"><div class="actions"><button class="btn green" onclick="auditorSignIn()">Sign in as auditor</button></div></div>';
+const auditorBox=()=>'<div style="max-width:340px;margin:18px auto 0;text-align:left"><b>Auditor sign-in</b><div class="muted" style="margin:2px 0 6px">Legal Services and Internal Audit reviewers (read-only).</div><select id="audName"><option value="">-- Select your name --</option>'+(data.auditorNames||[]).map(n=>'<option value="'+escHTML(n)+'">'+escHTML(n)+'</option>').join('')+'</select><input id="audCode" type="password" placeholder="Your code" autocomplete="new-password" style="margin-top:8px"><div class="actions"><button class="btn green" onclick="auditorSignIn()">Sign in as auditor</button></div></div>';
 window.auditorSignIn=run(async()=>{
  const n=($('audName')||{}).value||"",c=($('audCode')||{}).value||"";
- if(!n.trim()||!c.trim())throw new Error("Enter your name and code.");
+ if(!n.trim()||!c.trim())throw new Error("Choose your name and enter your code.");
  AUD={name:n.trim(),code:c.trim()};
  try{await refresh();if(data.role!=="auditor")throw new Error("Name or code not recognised.")}
  catch(e){AUD=null;data.me=undefined;data.role=undefined;throw e}
