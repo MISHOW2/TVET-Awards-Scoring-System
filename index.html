@@ -133,6 +133,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:11px;border-bottom:1px s
 </main>
 
 <script>
+var editingNominee=null; // defined before init() runs, so old localStorage data cannot crash the page
 // Nominee and college names come from a shared Google Sheet that several people can
 // edit. Anything from the sheet is escaped before it is written into the page, so a
 // stray angle bracket in a name stays text and cannot run as code.
@@ -211,6 +212,42 @@ const SCALE=[[1,"Poor","Does not meet requirements. Little or no supporting evid
  [5,"Outstanding","Exceptional evidence of innovation, sustainability and sector-wide impact."]];
 // Recognition bands from the framework. A nominee is placed by the panel average.
 const BANDS=[[90,"National Excellence Winner"],[80,"Finalist Recognition"],[70,"Merit Recognition"],[0,"Does not qualify"]];
+// ---- From the Adjudicator Guide: rubric per criterion (same order as CRITERIA) ----
+const RUBRIC=[
+ {focus:"Quality of teaching practice, learner engagement and instructional excellence.",
+  consider:["Teaching methodologies","Learner engagement techniques","Classroom practice","Peer evaluations","Teaching-related achievements","Alignment between teaching practice and learner outcomes"],
+  ask:["How effectively are learners engaged?","What evidence demonstrates instructional excellence?","Is there evidence of measurable learner improvement?","Can the practice be replicated elsewhere?"],
+  rub:["Little evidence of effective teaching practice.","Some effective practices evident but significant gaps remain.","Good evidence of quality teaching and learner engagement.","Strong evidence of excellence and measurable impact.","Exceptional teaching practice demonstrating sustained excellence, innovation and sector impact."]},
+ {focus:"Learner achievement, completion and success rates.",
+  consider:["Pass rates","Completion rates","Certification rates","Retention rates","Progression data","Trade test results","Longitudinal trends"],
+  ask:["What learner outcomes are demonstrated?","How significant are the achievements?","Are improvements sustained?"],
+  rub:["Minimal evidence of learner success.","Limited evidence of learner performance improvement.","Good and verifiable learner outcomes demonstrated.","Strong and consistent positive learner outcomes.","Outstanding learner performance supported by compelling data and measurable impact."]},
+ {focus:"Employer engagement and workplace relevance.",
+  consider:["Employer partnerships","Workplace placements","Apprenticeships","Internships","Graduate employment outcomes","Employer testimonials"],
+  ask:["How strong are industry partnerships?","How have learners benefited?","Is there evidence of employability outcomes?"],
+  rub:["Little or no evidence of industry engagement.","Limited partnerships and workplace relevance.","Adequate industry engagement and learner benefit.","Strong partnerships with measurable outcomes.","Exceptional industry engagement resulting in significant employability impact."]},
+ {focus:"Innovative approaches and technology integration.",
+  consider:["Innovative teaching methods","Digital tools","Technology-enabled learning","Learner support interventions","Measurable outcomes"],
+  ask:["What innovation was introduced?","What challenge did it address?","What evidence demonstrates impact?"],
+  rub:["No evidence of innovation.","Innovation is limited with weak evidence of impact.","Innovation has been implemented successfully.","Strong innovation with measurable outcomes.","Outstanding innovation demonstrating transformative impact."]},
+ {focus:"Continuous learning and contribution to the TVET sector.",
+  consider:["Training attended","Qualifications obtained","Sector participation","Institutional contributions","Application of learning"],
+  ask:["Is there commitment to continuous learning?","Has learning improved practice?","Has the nominee contributed to the sector?"],
+  rub:["Minimal professional development evidence.","Some development activity with limited impact.","Consistent professional growth evident.","Strong commitment to development and contribution.","Exceptional professional growth and sector contribution."]},
+ {focus:"Learner satisfaction and teaching effectiveness ratings.",
+  consider:["Student surveys","Graduate feedback","Testimonials","Satisfaction ratings","Quality of learner comments"],
+  ask:["How do learners perceive the nominee?","Is feedback consistent?","Does feedback support claims of excellence?"],
+  rub:["Negative, absent or insufficient feedback.","Mixed learner feedback.","Positive learner feedback supporting effectiveness.","Strong learner satisfaction demonstrated.","Exceptional and consistently positive learner feedback."]}];
+// Cross-cutting indicators: these inform scoring across all six criteria.
+const INDICATORS=[["Impact","What measurable difference was achieved?"],["Innovation","What new or improved approach was introduced?"],["Industry Relevance","How well does the work respond to labour market needs?"],["Learner Success","What evidence demonstrates improved learner outcomes?"],["Sustainability","Can the initiative continue over time?"],["Transferability","Can the practice be replicated elsewhere?"]];
+const STAGES=[["Stage 1","Administrative sorting and screening of the POEs by the AHK Team","Verification of eligibility and submission requirements"],["Stage 2","Technical evaluation by the DHET Scoring Team","Independent scoring against criteria"],["Stage 3","Shortlisting of finalists by the DHET Audit and Legal","Highest scoring nominees identified"],["Stage 4","National Adjudication Panel discussion (excluding DHET, but with Audit and Legal)","Final ranking and recommendations"],["Stage 5","Awards approval and announcement","Confirmation of award recipients"]];
+const EVIDENCE=[["Student performance data","Pass, completion, certification, retention and progression rates; trade test performance; three-year trends","Examination reports, academic records, MIS reports, quality assurance reports"],["Industry partnership evidence","Workplace placements, apprenticeships, learnerships, internship records, MoUs, employer testimonials, employment outcomes","Signed agreements, placement records, employer confirmations"],["Peer reviews","Classroom observations, moderation reports, academic evaluations, subject specialist reviews","HoD reports, senior lecturer assessments, academic manager reports"],["Student feedback","Student and graduate surveys, learner feedback reports, focus group findings, testimonials","The feedback documents themselves"],["Institutional endorsement","Principal support letter, HoD recommendation, institutional confirmation of achievements","The signed letters"]];
+const rubricHTML=i=>{const r=RUBRIC[i];if(!r)return"";
+ return '<details style="margin-top:10px"><summary style="cursor:pointer;color:#145da0;font-weight:bold">Rubric, what to consider and guiding questions</summary>'+
+  '<p class="muted" style="margin:8px 0"><b>Focus:</b> '+escHTML(r.focus)+'</p>'+
+  '<table style="margin:6px 0">'+r.rub.map((t,k)=>'<tr><td style="width:36px"><b>'+(k+1)+'</b></td><td>'+escHTML(t)+'</td></tr>').join("")+'</table>'+
+  '<p class="muted" style="margin:8px 0 2px"><b>Consider:</b> '+r.consider.map(escHTML).join("; ")+'.</p>'+
+  '<p class="muted" style="margin:2px 0"><b>Ask yourself:</b> '+r.ask.map(escHTML).join(" ")+'</p></details>'}
 const bandOf=v=>(BANDS.find(b=>v>=b[0])||BANDS[BANDS.length-1])[1];
 const pct=(vals,crit,max)=>vals.reduce((a,v,i)=>a+v/max*(+crit[i].split("|")[1]),0); // always out of 100
 const esc=x=>String(x??"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
@@ -419,12 +456,12 @@ window.downloadTemplate=run(async()=>{
   alert("Template downloaded. The second sheet lists every category and college, so the wording can be copied exactly.");
  } finally { busy(false) }
 });
-function parseCsv(text){
+function parseCsv(text,d){
  const rows=[];let cell="",row=[],q=false;
  for(let i=0;i<text.length;i++){const ch=text[i];
   if(q){if(ch==='"'){if(text[i+1]==='"'){cell+='"';i++}else q=false}else cell+=ch}
   else if(ch==='"')q=true;
-  else if(ch===","){row.push(cell);cell=""}
+  else if(ch===d){row.push(cell);cell=""}
   else if(ch==="\n"){row.push(cell);rows.push(row);row=[];cell=""}
   else if(ch!=="\r")cell+=ch}
  if(cell!==""||row.length){row.push(cell);rows.push(row)}
@@ -437,7 +474,12 @@ function readRows(file){
   r.onerror=()=>bad(new Error("That file could not be read. Try saving it again."));
   r.onload=async()=>{
    try{
-    if(isCsv)return ok(parseCsv(String(r.result).replace(/^﻿/,"")));
+    if(isCsv){
+     const clean=String(r.result).replace(/^\uFEFF/,"");
+     const first=clean.split(/\r?\n/,1)[0];
+     const d=first.split(";").length>first.split(",").length?";":",";
+     return ok(parseCsv(clean,d));
+    }
     const X=await sheetJs(),wb=X.read(new Uint8Array(r.result),{type:"array"});
     ok(X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,blankrows:false,raw:false}));
    }catch(e){bad(e)}
@@ -482,6 +524,7 @@ window.importNominees=run(async file=>{
  };
  if(!queue.length){report();throw new Error("Nothing in that file could be added. The reasons are listed below.")}
  try{
+  await api("verify",{},true);
   for(let i=0;i<queue.length;i++){
    const row=queue[i];
    busy("Adding nominee "+(i+1)+" of "+queue.length+"...");
@@ -489,7 +532,7 @@ window.importNominees=run(async file=>{
     await api("nominee",{id:row.id,name:row.name,college:row.college,cat:row.cat,catName:categories[row.cat][0],extra:row.extra},true);
     added.push(row);
    }catch(e){
-    if(e.message==="cancelled")throw e;
+    if(e.message==="cancelled"||/PIN/i.test(e.message))throw e;
     skipped.push({line:row.line,name:row.name,why:"The shared record refused this row: "+e.message});
    }
   }
@@ -503,7 +546,7 @@ $('importFile').onchange=e=>{const f=e.target.files&&e.target.files[0];if(f){imp
 // they have typed. Re-render the form only when nothing is in progress.
 function formInProgress(){
  const el=$('scoreForm');if(!el)return false;
- return [...el.querySelectorAll('input,textarea')].some(i=>i.id!=='judgeCode'&&String(i.value||'').trim()!=='');
+ return [...el.querySelectorAll('input,textarea')].some(i=>i.id!=='judgeCode'&&i.type!=='checkbox'&&String(i.value||'').trim()!=='');
 }
 function refreshKeepingWork(){
  return refresh().then(()=>{if(!formInProgress())loadScoreForm();renderMyScores()}).catch(()=>{});
@@ -561,10 +604,11 @@ function body(n,id,j,ex){
  if(c!=="none"){el.innerHTML="";return}
  const lo=max<=10?1:0,rs=parseR(ex&&ex.comments,crit);
  const reopened=ex?'<div class="notice" style="border-left-color:#8a6d1a;background:#fdf6e3"><b>You already scored '+escHTML(n.name)+' at '+Number(ex.total).toFixed(2)+'%.</b> Change what you need to and submit again. Your earlier scores are filled in below, and the change is recorded with your reason.</div>':"";
+ const ind='<details style="margin:0 0 14px"><summary style="cursor:pointer;color:#145da0;font-weight:bold">Cross-cutting indicators: these inform every criterion</summary><table style="margin-top:8px">'+INDICATORS.map(x=>'<tr><td><b>'+escHTML(x[0])+'</b></td><td>'+escHTML(x[1])+'</td></tr>').join("")+'</table></details>';
  const guide=max===5?'<div class="notice" style="margin-bottom:18px">'+SCALE.map(x=>"<b>"+x[0]+" "+x[1]+"</b> &middot; "+x[2]).join("<br>")+'</div>':"";
- el.innerHTML=reopened+guide+crit.map((x,i)=>{const [name,w]=x.split("|");return `<div class="criteria"><div class="criterion-row"><div><b>${escHTML(name)}</b><small style="display:block;color:#68758a">Weight: ${w}% | Score ${lo}-${max}${max<=10?" (whole numbers)":""}</small></div><input class="score-input" type="number" min="${lo}" max="${max}" step="${max<=10?1:"any"}" id="sc${i}" value="${ex?ex.values[i]:""}" placeholder="${lo}"><div>${w}%</div><div></div></div><input type="text" id="rs${i}" value="${esc(rs[i])}" placeholder="Written reason for this score (required)" style="margin-top:8px"></div>`}).join("")+
+ el.innerHTML=reopened+guide+ind+crit.map((x,i)=>{const [name,w]=x.split("|");return `<div class="criteria"><div class="criterion-row"><div><b>${escHTML(name)}</b><small style="display:block;color:#68758a">Weight: ${w}% | Score ${lo}-${max}${max<=10?" (whole numbers)":""}</small></div><input class="score-input" type="number" min="${lo}" max="${max}" step="${max<=10?1:"any"}" id="sc${i}" value="${ex?ex.values[i]:""}" placeholder="${lo}"><div>${w}%</div><div></div></div>${max===5?rubricHTML(i):""}<input type="text" id="rs${i}" value="${esc(rs[i])}" placeholder="Written reason for this score (required)" style="margin-top:8px"></div>`}).join("")+
  (ex?`<label>Reason for changing your earlier scores (required)</label><textarea id="changeWhy"></textarea>`:"")+
- `<div class="actions"><button class="btn green" onclick="submitScore('${escHTML(id)}')">${ex?"Update":"Submit"} Score</button></div><div id="liveTotal" class="total"></div>`;
+ `<div class="notice" style="margin-top:16px"><label style="font-weight:normal;display:flex;gap:10px;align-items:flex-start;margin:0 0 10px"><input type="checkbox" id="confid" style="width:auto;margin-top:3px"><span><b>Confidentiality.</b> I acknowledge that all nomination materials, presentations, scores, comments and deliberations are confidential and may not be disclosed outside the official adjudication process.</span></label><label style="font-weight:normal;display:flex;gap:10px;align-items:flex-start;margin:0"><input type="checkbox" id="signoff" style="width:auto;margin-top:3px"><span><b>Adjudicator sign-off.</b> I confirm that I have assessed this nomination impartially and solely on the basis of the submitted and verified evidence, in accordance with the National TVET Excellence Awards Framework and Adjudicator Handbook.</span></label></div><div class="actions"><button class="btn green" data-id="${escHTML(id)}" onclick="submitScore(this.dataset.id)">${ex?"Update":"Submit"} Score</button></div><div id="liveTotal" class="total"></div>`;
  document.querySelectorAll(".score-input").forEach(i=>i.addEventListener("input",()=>live(n)));live(n);
 }
 function live(n){const crit=categories[n.cat][1],vals=crit.map((_,i)=>+($('sc'+i)?.value||0));$('liveTotal').textContent="Current weighted score: "+pct(vals,crit,data.settings.max).toFixed(2)+"%"}
@@ -573,6 +617,7 @@ window.submitScore=run(async id=>{
  const n=data.nominees.find(x=>x.id===id),j=data.me||"",crit=categories[n.cat][1],max=data.settings.max;
  if(!j)return alert("Select your name.");
  if($('coi').value!=="none")return alert("Declare no conflict of interest before scoring.");
+ if(!$('confid').checked||!$('signoff').checked)return alert("Tick both the confidentiality acknowledgement and the adjudicator sign-off before submitting.");
  const lo=max<=10?1:0;
  const vals=crit.map((_,i)=>{const t=$('sc'+i).value,v=t===""?NaN:+t;return isNaN(v)||v<lo||v>max||(max<=10&&!Number.isInteger(v))?null:v});
  if(vals.includes(null))return alert("Enter a valid score ("+lo+"-"+max+(max<=10?", whole numbers":"")+") for every criterion.");
@@ -675,6 +720,9 @@ function renderHelp(){
  const crit=CRITERIA.map(c=>{const [n,w]=c.split("|");return "<tr><td>"+escHTML(n)+"</td><td><b>"+w+"%</b></td></tr>"}).join("");
  const cats=categories.map((c,i)=>"<tr><td>"+(i+1)+"</td><td>"+escHTML(c[0])+"</td></tr>").join("");
  const scale=SCALE.map(x=>"<tr><td><b>"+x[0]+"</b></td><td><b>"+escHTML(x[1])+"</b></td><td>"+escHTML(x[2])+"</td></tr>").join("");
+ const stages=STAGES.map(x=>"<tr><td><b>"+escHTML(x[0])+"</b></td><td>"+escHTML(x[1])+"</td><td>"+escHTML(x[2])+"</td></tr>").join("");
+ const evidence=EVIDENCE.map(x=>"<tr><td><b>"+escHTML(x[0])+"</b></td><td>"+escHTML(x[1])+"</td><td>"+escHTML(x[2])+"</td></tr>").join("");
+ const inds=INDICATORS.map(x=>"<tr><td><b>"+escHTML(x[0])+"</b></td><td>"+escHTML(x[1])+"</td></tr>").join("");
  const bands=BANDS.map(b=>"<tr><td><b>"+(b[0]?b[0]+" and above":"below 70")+"</b></td><td>"+escHTML(b[1])+"</td></tr>").join("");
  el.innerHTML=`
  <div class="grid">
@@ -717,6 +765,29 @@ function renderHelp(){
    <p><b>A score will not submit.</b> Every criterion needs a score and a written reason of at least a few words, and your personal code must be filled in.</p>
    <p><b>A nominee is missing.</b> Press Refresh, or check the Nominees page; another organiser may still be loading them.</p>
    <p>Scores and nominees live in the shared Google Sheet. If this page is closed, nothing submitted is lost.</p>
+  </div>
+ </div>
+ <div class="grid">
+  <div class="panel"><h3>The adjudication process</h3>
+   <table><tr><th>Stage</th><th>Activity</th><th>Outcome</th></tr>${stages}</table>
+   <p class="muted" style="margin-top:14px">Adjudicators evaluate evidence and demonstrated impact, not reputation, status or institutional profile.</p>
+   <h3 style="margin-top:22px">Principles</h3>
+   <p><b>Fairness:</b> every nominee is assessed against the same criteria and standards. <b>Objectivity:</b> scores rest only on verified evidence. <b>Consistency:</b> standards stay the same across all nominees. <b>Confidentiality:</b> nomination information stays inside the adjudication process. <b>Accountability:</b> every score is supported by a clear written comment. <b>Integrity:</b> declare any actual or perceived conflict of interest immediately.</p>
+  </div>
+  <div class="panel"><h3>Evidence to review before scoring</h3>
+   <p>Review all submitted evidence before assigning any score.</p>
+   <table><tr><th>Evidence</th><th>Review</th><th>Verify against</th></tr>${evidence}</table>
+  </div>
+ </div>
+ <div class="grid">
+  <div class="panel"><h3>Cross-cutting indicators</h3>
+   <p>These inform scoring across all six criteria.</p>
+   <table><tr><th>Indicator</th><th>Key question for judges</th></tr>${inds}</table>
+  </div>
+  <div class="panel"><h3>Declarations</h3>
+   <p><b>Conflict of interest.</b> Declared per nominee on the Scoring page. If you have an actual, potential or perceived conflict, recuse yourself and tell the Awards Secretariat.</p>
+   <p><b>Confidentiality and sign-off.</b> Before each submission you tick the confidentiality acknowledgement and the adjudicator sign-off. The signed forms in the Adjudicator Guide remain the formal record.</p>
+   <p><b>Rubric on the scoring form.</b> Under every criterion, open <b>Rubric, what to consider and guiding questions</b> to see what each score from 1 to 5 means for that criterion.</p>
   </div>
  </div>
  <div class="grid">
