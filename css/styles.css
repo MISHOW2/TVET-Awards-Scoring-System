@@ -1,0 +1,87 @@
+:root{--navy:#0b1f3a;--blue:#145da0;--gold:#d4af37;--light:#f4f7fb;--dark:#172033;--muted:#68758a;--white:#fff;--green:#198754;--red:#c0392b;--shadow:0 8px 24px rgba(11,31,58,.10)}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--light);color:var(--dark)}
+header{background:linear-gradient(135deg,var(--navy),#123e6b);color:white;padding:14px 5%;display:flex;align-items:center;justify-content:space-between;gap:14px 20px;flex-wrap:wrap;position:sticky;top:0;z-index:10}
+.brand{display:flex;align-items:center;gap:14px}.dhet-logo{height:104px;width:auto;max-width:400px;object-fit:contain;background:#fff;border-radius:8px;padding:6px}@media(max-width:900px){.dhet-logo{height:84px;max-width:320px}}@media(max-width:560px){.dhet-logo{height:68px;max-width:240px}}.logo{width:52px;height:52px;border:2px solid var(--gold);border-radius:50%;display:grid;place-items:center;color:var(--gold);font-weight:bold}.brand h1{font-size:20px;margin:0}.brand p{margin:4px 0 0;color:#dce8f5;font-size:12px}
+nav{display:flex;gap:8px;flex-wrap:wrap}nav button{background:transparent;color:white;border:1px solid #ffffff55;padding:9px 13px;border-radius:7px;cursor:pointer}nav button.active,nav button:hover{background:var(--gold);color:var(--navy)}
+main{max-width:1400px;margin:auto;padding:28px 5%}.page{display:none}.page.active{display:block}.hero{background:white;border-radius:18px;padding:30px;box-shadow:var(--shadow);margin-bottom:22px}.hero h2{margin:0 0 8px;color:var(--navy);font-size:30px}.hero p{color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.card{background:white;border-radius:14px;padding:20px;box-shadow:var(--shadow)}.card .num{font-size:28px;font-weight:bold;color:var(--blue)}.card small{color:var(--muted)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.panel{background:white;padding:22px;border-radius:14px;box-shadow:var(--shadow);margin-bottom:20px}.panel h3{margin-top:0;color:var(--navy)}
+label{display:block;font-weight:bold;margin:12px 0 6px}input,select,textarea{width:100%;padding:11px;border:1px solid #ccd5e2;border-radius:7px;font:inherit}textarea{min-height:80px;resize:vertical}
+button.primary,.btn{border:0;background:var(--blue);color:white;padding:11px 16px;border-radius:7px;cursor:pointer;font-weight:bold}.btn.gold{background:var(--gold);color:var(--navy)}.btn.red{background:var(--red)}.btn.green{background:var(--green)}.btn.gray{background:#68758a}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
+table{width:100%;border-collapse:collapse}th,td{padding:11px;border-bottom:1px solid #e5eaf0;text-align:left}th{background:#eef3f8;color:var(--navy)}
+.criteria{border:1px solid #dfe6ef;padding:15px;border-radius:10px;margin:10px 0;background:#fbfcfe}.criterion-row{display:grid;grid-template-columns:1fr 120px 90px 42px;gap:8px;align-items:end}
+.score-input{font-size:18px;text-align:center}.total{font-size:25px;font-weight:bold;color:var(--blue)}
+.badge{display:inline-block;padding:5px 9px;border-radius:20px;background:#e9f2fb;color:var(--blue);font-size:12px;font-weight:bold}.rank{font-size:22px;font-weight:bold;color:var(--gold)}
+.bar{height:10px;background:#e5eaf0;border-radius:20px;overflow:hidden}.bar i{display:block;height:100%;background:var(--blue)}
+.notice{padding:12px;border-left:4px solid var(--gold);background:#fff9e7;margin:12px 0}.empty{text-align:center;padding:30px;color:var(--muted)}
+@media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.criterion-row{grid-template-columns:1fr 100px 75px 42px}}
+@media(max-width:560px){header{position:static;align-items:flex-start;flex-direction:column}.cards{grid-template-columns:1fr}.hero h2{font-size:24px}main{padding:18px 3%}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.muted{color:#68758a;font-size:13px}
+.tablewrap{overflow:auto;max-height:320px;margin-top:10px}
+
+/* A grid child keeps its min-content width by default, so one long college name in a
+   select pushed the whole Nominees page sideways on a phone. */
+.grid>*,.cards>*{min-width:0}
+.panel select,.panel input,.panel textarea{max-width:100%;box-sizing:border-box}
+.tablewrap table{min-width:420px}
+
+/* Add Nominee: basic fields on the left, nomination details on the right. */
+#addNomineeGrid{grid-template-columns:minmax(260px,1fr) 2fr;align-items:start}
+#addRight .dbox{margin-top:0}
+.xgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.xwide{grid-column:1/-1}
+@media(max-width:900px){#addNomineeGrid{grid-template-columns:1fr}}
+@media(max-width:560px){.xgrid{grid-template-columns:1fr}}
+
+/* ---- Nomination details ---- */
+.dcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin:12px 0 10px}
+.dcard{background:#fbfcfe;border:1px solid #dfe6ef;border-top:4px solid #145da0;border-radius:12px;padding:12px 14px;min-width:0}
+.dcard.dwide{grid-column:1/-1}
+.dcard h4{margin:0 0 10px;color:#0b1f3a;font-size:15px}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.dtile{background:#fff;border:1px solid #e5eaf0;border-radius:8px;padding:8px 10px;min-width:0;overflow-wrap:anywhere;font-size:14px}
+.dlabel{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#68758a;font-weight:700;margin-bottom:3px}
+.dlongs{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
+.dlong{background:#fff;border:1px solid #e5eaf0;border-radius:10px;padding:10px 12px;min-width:0}
+.dtext{white-space:pre-wrap;font-size:14px;line-height:1.55;overflow-wrap:anywhere}
+.dbox{border:1px solid #dfe6ef;border-radius:12px;padding:6px 16px 10px;margin:14px 0;background:#fff}
+.dbox summary{cursor:pointer;font-weight:700;padding:8px 0}
+
+/* ---- Handbook: rubrics, declarations, moderation ---- */
+.rub-line{margin-top:8px;padding:8px 10px;background:#eef6ff;border-left:3px solid #145da0;border-radius:4px;font-size:13px;line-height:1.45}
+.rub-more{margin-top:8px;font-size:13px}
+.rub-more summary,.ind-box summary{cursor:pointer;color:#145da0;font-weight:bold}
+.rub-more ul{margin:4px 0 8px 18px;padding:0}
+.rub-more p{margin:6px 0 2px}
+.rub-tab{width:100%;border-collapse:collapse;margin-top:6px}
+.rub-tab td{padding:4px 6px;border-bottom:1px solid #eef1f5;vertical-align:top}
+.rub-tab td:first-child{width:28px;font-weight:bold;color:#145da0}
+.ind-box{border:1px solid #dfe6ef;border-radius:10px;background:#f7fafd;padding:10px 14px;margin:12px 0}
+.ind-box ul{margin:6px 0 2px 18px;padding:0;font-size:13px}
+.signoff{display:flex;gap:10px;align-items:flex-start;font-weight:normal;margin-top:16px;padding:12px;border:1px solid #dfe6ef;border-radius:8px;background:#fbfcfe}
+.signoff input{width:auto;margin-top:3px}
+.mod-box{margin:0;padding:14px 16px;border-top:2px solid #d4af37;background:#fffdf5}
+.mod-box h4{margin:0 0 8px;color:#0b1f3a}
+.mod-box textarea{min-height:60px}
+.mod-view p{margin:2px 0 10px;white-space:pre-wrap}
+.mod-view b{font-size:12px;color:#68758a;text-transform:uppercase;letter-spacing:.03em;display:block}
+.flag-diff{display:inline-block;margin-left:8px;padding:3px 9px;border-radius:20px;background:#fdecea;color:#c0392b;font-size:12px;font-weight:bold}
+
+/* ---- Audit trail ---- */
+.aud-n{border:1px solid #dfe6ef;border-radius:12px;background:#fff;margin:12px 0;overflow:hidden}
+.aud-n>summary{cursor:pointer;padding:12px 16px;background:#f4f7fb;font-weight:bold;color:#0b1f3a;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;list-style:none}
+.aud-n>summary::-webkit-details-marker{display:none}
+.aud-n>summary small{font-weight:normal;color:#68758a;display:block}
+.aud-j{padding:14px 16px;border-top:1px solid #e5eaf0}
+.aud-jh{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.aud-jh b{color:#145da0}
+.aud-jh span{color:#68758a;font-size:13px}
+.aud-t{width:100%;border-collapse:collapse;table-layout:fixed}
+.aud-t th{background:#eef3f8;font-size:12px;padding:7px 9px;text-align:left}
+.aud-t td{padding:8px 9px;border-bottom:1px solid #eef1f5;vertical-align:top;font-size:14px;line-height:1.45;overflow-wrap:anywhere}
+.aud-t td.sc{text-align:center;font-weight:bold;color:#145da0;white-space:nowrap}
+.aud-chip{display:inline-block;padding:3px 9px;border-radius:20px;background:#e9f2fb;color:#145da0;font-size:12px;font-weight:bold}@media(max-width:560px){.aud-t,.aud-t tbody,.aud-t tr,.aud-t td{display:block;width:100%}
+.aud-t thead{display:none}
+.aud-t tr{border-bottom:1px solid #e5eaf0;padding:6px 0}
+.aud-t td{border:0;padding:3px 9px}}
