@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NATIONAL TVET EXCELLENCE AWARDS 2026 — Scoring App</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<header>
+  <div class="brand">
+<img class="dhet-logo" src="assets/logo.webp" alt="Department of Higher Education and Training logo">
+<div><h1>NATIONAL TVET EXCELLENCE AWARDS 2026</h1><p>Awards Scoring & Adjudication System</p></div>
+</div>
+  <nav>
+    <button class="nav active" data-page="dashboard">Dashboard</button>
+    <button class="nav" data-page="nominees">Nominees</button>
+    <button class="nav" data-page="scoring">Scoring</button>
+    <button class="nav" data-page="results">Results</button>
+    <button class="nav" data-page="settings">Settings</button>
+    <button class="nav" data-page="help">Help</button>
+  </nav>
+</header>
+
+<main>
+<section id="dashboard" class="page active">
+  <div class="hero"><h2>NATIONAL TVET EXCELLENCE AWARDS 2026</h2><p>Manage nominees, score entries using weighted criteria, and generate transparent category results.</p>
+  <div class="actions"><button class="btn gold" onclick="showPage('nominees')">+ Add Nominee</button><button class="btn" onclick="showPage('scoring')">Start Scoring</button><button class="btn gray" onclick="exportCSV()">Export Results</button></div></div>
+  <div class="cards">
+    <div class="card"><div class="num" id="statNominees">0</div><small>Nominees</small></div>
+    <div class="card"><div class="num" id="statCategories">7</div><small>Award Categories</small></div>
+    <div class="card"><div class="num" id="statScores">0</div><small>Completed Scores</small></div>
+    <div class="card"><div class="num" id="statAverage">0%</div><small>Average Score</small></div>
+  </div>
+  <div class="panel" style="margin-top:20px"><h3>Award Categories</h3><table id="categoryTable"></table></div>
+</section>
+
+<section id="nominees" class="page">
+  <div class="hero"><h2>NATIONAL TVET EXCELLENCE AWARDS 2026 — Nominee Management</h2><p>Add and manage lecturers or teams entering the awards.</p></div>
+
+  <div class="panel"><h3>Add Nominee</h3>
+    <div class="grid" id="addNomineeGrid">
+      <div id="addLeft">
+        <label>Nominee / Lecturer Name</label><input id="nName" placeholder="e.g. Dr. Jane Doe">
+        <label>College / Institution</label><select id="nCollege"></select>
+        <label>Award Category</label><select id="nCategory"></select>
+        <label>Nomination ID</label><input id="nId" placeholder="e.g. TVET-001">
+        <div class="actions"><button class="btn green" id="saveNomineeBtn" onclick="addNominee()">Save Nominee</button> <button class="btn" id="cancelEditNominee" onclick="cancelNomineeEdit()" style="display:none">Cancel edit</button></div>
+        <div id="nomineeFormNote" class="notice" style="display:none"></div>
+      </div>
+      <div id="addRight"></div>
+    </div>
+  </div>
+
+  <div class="panel"><h3>Nominees</h3><div id="nomineeList"></div></div>
+
+  <div class="panel"><h3>Import the whole list</h3>
+    <p class="muted">Upload an Excel or CSV file with one nominee per row. The first row must have these headings: Nomination ID, Nominee name, College, Award category. The detail columns are optional. Nothing already on the register is overwritten and every skipped row is listed with the reason.</p>
+    <label for="importFile">Upload your filled-in file</label>
+    <input id="importFile" type="file" accept=".xlsx,.xls,.csv">
+    <div id="importReport"></div>
+  </div>
+</section>
+
+<section id="scoring" class="page">
+  <div class="hero"><h2>NATIONAL TVET EXCELLENCE AWARDS 2026 — Judge Scoring</h2><p>Scores are entered from 0–100 for each criterion. The app automatically applies the configured weights.</p></div>
+  <div class="panel">
+    <label>Judge Name</label><select id="judgeName"><option value="">-- Select your name --</option></select>
+    <label>Select Nominee</label><select id="scoreNominee" onchange="loadScoreForm()"></select>
+    <div id="scoreForm"></div>
+  </div>
+  <div class="panel" id="myScoresPanel"><h3>Your scoring so far</h3><div id="myScores"></div></div>
+</section>
+
+<section id="help" class="page">
+  <div class="hero"><h2>NATIONAL TVET EXCELLENCE AWARDS 2026 &mdash; How to use this app</h2><p>Everything on one page. Judges need the first section only.</p></div>
+  <div id="helpBody"></div>
+</section>
+
+<section id="results" class="page">
+  <div class="hero"><h2>NATIONAL TVET EXCELLENCE AWARDS 2026 — Results & Leaderboard</h2><p>Results are calculated from completed judging records. This prototype stores data locally in your browser.</p>
+  <div class="actions"><button class="btn gray" onclick="exportCSV()">Download CSV</button><button class="btn red" onclick="clearScores()">Clear Scores</button></div></div>
+  <div class="panel"><div id="resultsTable"></div></div>
+</section>
+
+<section id="settings" class="page">
+  <div class="hero"><h2>Scoring Settings</h2><p>Configure the scoring scale and judge requirements.</p></div>
+  <div class="grid">
+    <div class="panel"><h3>General Settings</h3>
+      <label>Maximum score per criterion</label><input id="maxScore" type="number" min="1" max="100" value="100">
+      <label>Required number of judges</label><input id="judgeCount" type="number" min="1" value="3">
+      <div class="actions"><button class="btn green" onclick="saveSettings()">Save Settings</button></div>
+    </div>
+    <div class="panel"><h3>Scoring Method</h3><div class="notice">Final score = weighted average of all completed judge scores. Each criterion contributes according to its percentage weight.</div><p><b>Example:</b> A criterion weighted 25% and scored 80 contributes 20 points to the final 100-point score.</p></div>
+  </div>
+</section>
+</main>
+
+<!-- Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- App: load order matters (later files wrap functions defined in earlier ones) -->
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/core.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/nominees.js"></script>
+<script src="js/import.js"></script>
+<script src="js/scoring.js"></script>
+<script src="js/results.js"></script>
+<script src="js/judges.js"></script>
+<script src="js/help.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/export.js"></script>
+<script src="js/nomination-details.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/handbook.js"></script>
+<script src="js/audit.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

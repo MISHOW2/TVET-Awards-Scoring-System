@@ -41,4 +41,4 @@ async function refresh(){
   if(d.error){if(/PIN/.test(d.error))PIN=null;throw new Error(d.error)}
   data.me=undefined;data.role=undefined;data.confirmed=undefined;Object.assign(data,d);updateAll()
  } finally { if(mySeq===refreshSeq)busy(false) }}
-window.unlock=run(async()=>{PIN=prompt("Admin PIN:");if(!PIN)return;try{await refresh()}catch(e){PIN=null;throw e}});
+window.unlock=run(async()=>{AUD=null;PIN=prompt("Admin PIN:");if(!PIN)return;try{await refresh()}catch(e){PIN=null;throw e}});

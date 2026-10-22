@@ -37,3 +37,16 @@ docs/                 guides (PDF)
 - **SHEET_URL** is in `js/config.js`. It must be the `https://script.google.com/macros/s/.../exec` address of the current deployment.
 - After any change to `apps-script/Code.gs`: Deploy, Manage deployments, pencil, New version, Deploy.
 - Never commit the admin PIN or any judge/auditor codes. They live only in the Google Sheet.
+
+## Portfolio of Evidence (PoE) PDFs
+
+Each nominee can have one PoE, a PDF kept in Google Drive. Only the Drive file ID is stored in the Nominees tab (last column); the PDF itself is never copied into the sheet or this repository.
+
+1. **Put the PDFs in a private Drive folder.** Name them with the nominee's name, e.g. `Category_College_Surname_Name_POE_2026.pdf`.
+2. **Link them to nominees**, either way:
+   - In the app (admin PIN): Nominees tab, click **PoE** on a nominee's row and paste the file's Google Drive link. Leave it empty to remove it. The **Edit** form and the bulk-import template also have a PoE column.
+   - In bulk: in the Settings tab add `poeFolder` = the folder ID, then run `linkPoEs` in the Apps Script editor. It matches file names to nominees, never overwrites an existing link, and reports files it could not match.
+3. **Decide who can open the files.** Either share the folder with each judge's Google account (view only), or add `poeShare` = `anyone` in the Settings tab so `linkPoEs` sets matched files to "anyone with the link can view". The link is only ever shown to a signed-in judge, auditor or admin, but anyone who is sent the link could open the file.
+4. Judges and auditors see **View the PoE here** (opens inside the page) and **Open in a new tab** above the nomination details. A nominee with no PoE shows "No PoE has been linked".
+
+After editing `Code.gs`, redeploy: Deploy > Manage deployments > pencil > Version: New version > Deploy.

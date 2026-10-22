@@ -14,12 +14,14 @@ sel.insertAdjacentHTML('afterend','<label>Your personal code</label><input id="j
  '<div class="actions" style="margin-top:10px"><button class="btn green" id="judgeSignIn">Sign in</button></div><div id="loginMsg" class="muted" style="margin-top:8px">Choose your name from the list, type your code, then press Sign in to load the nominees.</div>');
 function loginMsg(t,bad){const e=$('loginMsg');e.textContent=t;e.style.color=bad?"#c0392b":""}
 window.judgeSignIn=async()=>{
- AUD=null;
  const j=sel.value.trim(),c=$('judgeCode').value.trim();
  if(!j||!c)return loginMsg("Choose your name and enter your personal code.",true);
+ AUD=null;
+ // An admin session would make the sheet ignore the judge's name and code, so sign the admin out first.
+ const keepPin=PIN;PIN=null;
  try{await refresh();if(!data.me)throw new Error("Name or code not recognised.");
   sel.value=data.me;loginMsg("Signed in as "+data.me+".");if(!formInProgress())loadScoreForm();renderMyScores()}
- catch(e){data.me=undefined;loginMsg(e.message,true)}
+ catch(e){PIN=keepPin;data.me=undefined;loginMsg(e.message,true)}
 };
 $('judgeSignIn').onclick=judgeSignIn;
 $('judgeCode').onkeydown=e=>{if(e.key==="Enter")judgeSignIn()};

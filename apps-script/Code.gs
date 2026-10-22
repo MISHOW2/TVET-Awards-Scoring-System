@@ -14,9 +14,16 @@ const HEAD={
 
 // Extra nomination details, stored in the Nominees tab after the five core columns.
 // Judges are never sent the fields in JUDGE_HIDDEN (contact details and who nominated).
-const EXTRA=[['source','Source'],['title','Title'],['campus','Campus'],['department','Department'],['designation','Designation'],['status','Status'],['experience','Years of experience'],['province','Province'],['employeeNo','Employee number'],['focus','Focus area (subjects)'],['learners','Annual learners'],['email','Email'],['mobile','Mobile'],['nominator','Nominator'],['relationship','Nominator relationship'],['nominatorContact','Nominator contact'],['nominationDate','Nomination date'],['motivation','Motivation summary'],['why','Why deserving'],['impact','Measurable impact / evidence summary'],['profile','Professional profile'],['philosophy','Teaching philosophy'],['examples','Examples (teaching, curriculum, innovation)'],['evidence','Evidence, previous two academic years']];
+const EXTRA=[['source','Source'],['title','Title'],['campus','Campus'],['department','Department'],['designation','Designation'],['status','Status'],['experience','Years of experience'],['province','Province'],['employeeNo','Employee number'],['focus','Focus area (subjects)'],['learners','Annual learners'],['email','Email'],['mobile','Mobile'],['nominator','Nominator'],['relationship','Nominator relationship'],['nominatorContact','Nominator contact'],['nominationDate','Nomination date'],['motivation','Motivation summary'],['why','Why deserving'],['impact','Measurable impact / evidence summary'],['profile','Professional profile'],['philosophy','Teaching philosophy'],['examples','Examples (teaching, curriculum, innovation)'],['evidence','Evidence, previous two academic years'],['poe','PoE (Google Drive link or file ID)']];
 const JUDGE_HIDDEN=['employeeNo','email','mobile','nominator','nominatorContact','nominationDate'];
 const NOM_COLS=5+EXTRA.length;
+const POE_IDX=EXTRA.findIndex(x=>x[0]==='poe');   // the PoE column holds only a Google Drive file ID
+// Accepts a Drive share link or a bare file ID and returns the ID, or '' when it is not one.
+function poeId(x){
+ const s=String(x==null?'':x).trim();if(!s)return '';
+ let m=s.match(/^https:\/\/(?:drive|docs)\.google\.com\/(?:file\/(?:u\/\d+\/)?d\/|open\?id=|uc\?(?:[^#]*&)?id=)([A-Za-z0-9_-]{20,})/);
+ if(m)return m[1];
+ return /^[A-Za-z0-9_-]{20,}$/.test(s)?s:'';}
 
 function sh(n){
  let s=SpreadsheetApp.getActive().getSheetByName(n);
@@ -34,7 +41,7 @@ function nomSheet(){
   s.getRange(1,6,s.getMaxRows(),EXTRA.length).setNumberFormat('@');}
  return s;}
 // Nominees are read by column position (ID, Nominee, College, CatIdx, Category), so a differently worded header row cannot hide the data.
-function nomRows(){return nomSheet().getDataRange().getValues().slice(1).filter(r=>String(r[0])!=='').map(r=>({ID:r[0],Nominee:r[1],College:r[2],CatIdx:r[3],Category:r[4]}));}
+function nomRows(){return nomSheet().getDataRange().getValues().slice(1).filter(r=>String(r[0])!=='').map(r=>({ID:r[0],Nominee:r[1],College:r[2],CatIdx:r[3],Category:r[4],hasPoe:!!String(r[5+POE_IDX]==null?'':r[5+POE_IDX]).trim()}));}
 function settings(){const o={};rows('Settings').forEach(r=>o[r.Key]=r.Value);return o;}
 function setKey(k,v){const s=sh('Settings'),d=s.getDataRange().getValues();
  for(let i=1;i<d.length;i++)if(d[i][0]===k){s.getRange(i+1,2).setValue(v);return}s.appendRow([k,v]);}
@@ -110,7 +117,7 @@ function readData(b){
  o.auditorNames=rows('Auditors').map(r=>String(r.Name)).filter(Boolean);   // names only, for the auditor sign-in drop-down
  o.judgeNames=String(s.judgeList||'').split('\n').filter(Boolean);   // names only, never codes: fills the sign-in drop-down
  if(!adm&&!me)return out(o);
- o.nominees=all.map(r=>({id:String(r.ID),name:r.Nominee,college:r.College,cat:+r.CatIdx}));
+ o.nominees=all.map(r=>({id:String(r.ID),name:r.Nominee,college:r.College,cat:+r.CatIdx,poe:!!r.hasPoe}));   // poe = true/false only; the file ID goes out through 'details'
  if(full)o.judges=String(s.judgeList||'').split('\n').filter(Boolean);
  if(me){o.me=me;o.role=role}
  const keep=r=>full||r.judge===me;
@@ -136,6 +143,43 @@ function detailsData(b){
  const f={};EXTRA.forEach(([k],i)=>{if(full||!JUDGE_HIDDEN.includes(k))f[k]=String(r[5+i]==null?'':r[5+i])});
  return out({id:String(b.id),fields:f});}
 
+// ---------- PoE files in Google Drive ----------
+// Pure matching rule, so it can be tested without Drive: a nominee matches a file when every part of their name
+// is in the file name; failing that, when their surname AND their college are both in the file name.
+// A file that matches more than one nominee, or a nominee with more than one file, is left for a person to link.
+function poeMatch(nominees,files){
+ const words=s=>String(s||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+ const out={},unmatched=[],ambiguous=[];
+ files.forEach(f=>{
+  const fw=new Set(words(f.name.replace(/\.pdf$/i,''))),fk=key(f.name);
+  const hits=nominees.filter(n=>{
+   const nw=words(n.name).filter(w=>w.length>1);if(!nw.length)return false;
+   if(nw.every(w=>fw.has(w)))return true;
+   const kc=key(String(n.college||'').replace(/tvet college/i,''));
+   return fw.has(nw[nw.length-1])&&kc.length>3&&fk.includes(kc);});
+  if(hits.length===1)(out[hits[0].id]=out[hits[0].id]||[]).push(f.id);
+  else if(hits.length>1)ambiguous.push(f.name);else unmatched.push(f.name);});
+ Object.keys(out).forEach(id=>{if(out[id].length>1){ambiguous.push('Several files for '+id);delete out[id];}else out[id]=out[id][0];});
+ return {links:out,unmatched,ambiguous};}
+// RUN from the editor (select linkPoEs > Run) after putting the PoE PDFs in one Drive folder.
+// Settings tab: poeFolder = the folder's ID (the part after /folders/ in its address).
+// Optional: poeShare = anyone  -> each matched file is set to "anyone with the link can view".
+// Leave poeShare out and share the folder yourself with the judges. Existing links are never overwritten.
+function linkPoEs(){
+ const fid=String(settings().poeFolder||'').trim();
+ if(!fid)throw new Error('Add a row to the Settings tab: poeFolder = the Drive folder ID.');
+ const it=DriveApp.getFolderById(fid).getFilesByType(MimeType.PDF),files=[];
+ while(it.hasNext()){const f=it.next();files.push({id:f.getId(),name:f.getName()});}
+ const ns=nomSheet(),d=ns.getDataRange().getValues(),nominees=[];
+ for(let i=1;i<d.length;i++)if(String(d[i][0])!==''&&!String(d[i][5+POE_IDX]||'').trim())nominees.push({id:String(d[i][0]),name:d[i][1],college:d[i][2]});
+ const res=poeMatch(nominees,files);let n=0;
+ for(let i=1;i<d.length;i++){const id=res.links[String(d[i][0])];
+  if(id){ns.getRange(i+1,6+POE_IDX).setNumberFormat('@').setValue(id);n++;
+   if(String(settings().poeShare||'')==='anyone')DriveApp.getFileById(id).setSharing(DriveApp.Access.ANYONE_WITH_LINK,DriveApp.Permission.VIEW);}}
+ const msg='Linked '+n+' PoE file(s). Files with no match: '+(res.unmatched.join('; ')||'none')+'. Needs a person: '+(res.ambiguous.join('; ')||'none')+'.';
+ Logger.log(msg);try{SpreadsheetApp.getActive().toast(msg,'PoE linking',30)}catch(x){}
+ return msg;}
+
 function doPost(e){
  let b0;try{b0=JSON.parse(e.postData.contents)}catch(x){return out({error:'Bad request.'})}
  if(b0.action==='read'||b0.action==='details'){try{return b0.action==='read'?readData(b0):detailsData(b0)}catch(err){return out({error:String(err.message||err)})}}                        // reads do not need the write lock
@@ -153,13 +197,23 @@ function doPost(e){
     const ns=nomSheet(),nd=ns.getDataRange().getValues();let k=-1;
     for(let i=1;i<nd.length;i++)if(String(nd[i][0])===b.id)k=i;
     const row=[b.id,t(b.name),b.college,b.cat,b.catName];
-    const ex=b.extra?EXTRA.map(([key])=>t(String(b.extra[key]==null?'':b.extra[key]).slice(0,20000))):null;   // no extra sent = keep what is stored
+    const ex=b.extra?EXTRA.map(([key])=>{const raw=String(b.extra[key]==null?'':b.extra[key]).slice(0,20000);
+     if(key==='poe'){const id=poeId(raw);if(raw.trim()&&!id)throw new Error('The PoE must be a Google Drive file link or file ID.');return id;}
+     return t(raw);}):null;   // no extra sent = keep what is stored
     if(k>=0){                                   // edit: update in place and keep the Scores labels in step
      ns.getRange(k+1,1,1,row.length).setValues([row]);
      if(ex)ns.getRange(k+1,6,1,ex.length).setValues([ex]);
      const sc=sh('Scores'),sd=sc.getDataRange().getValues();
      for(let i=1;i<sd.length;i++)if(String(sd[i][0])===b.id)sc.getRange(i+1,2,1,3).setValues([[row[1],row[2],row[4]]]);
     }else ns.appendRow(ex?row.concat(ex):row);
+    break;}
+   case 'setPoe':{need();                        // attach, replace or remove one nominee's PoE (empty = remove)
+    const ns=nomSheet(),nd=ns.getDataRange().getValues();let k=-1;
+    for(let i=1;i<nd.length;i++)if(String(nd[i][0])===String(b.id))k=i;
+    if(k<0)throw new Error('Unknown nominee.');
+    const raw=String(b.poe==null?'':b.poe).trim(),id=poeId(raw);
+    if(raw&&!id)throw new Error('That is not a Google Drive file link or file ID.');
+    ns.getRange(k+1,6+POE_IDX).setNumberFormat('@').setValue(id);
     break;}
    case 'deleteNominee':need();
     nomSheet();del('Nominees',r=>String(r[0])===b.id);del('Scores',r=>String(r[0])===b.id);break;

@@ -85,3 +85,9 @@ table{width:100%;border-collapse:collapse}th,td{padding:11px;border-bottom:1px s
 .aud-t thead{display:none}
 .aud-t tr{border-bottom:1px solid #e5eaf0;padding:6px 0}
 .aud-t td{border:0;padding:3px 9px}}
+
+/* ---- Portfolio of Evidence ---- */
+.poebox{background:#fbfcfe;border:1px solid #dfe6ef;border-top:4px solid #b8860b;border-radius:12px;padding:12px 14px;margin:12px 0}
+.poebox h4{margin:0 0 10px;color:#0b1f3a;font-size:15px}
+.poeframe iframe{width:100%;height:78vh;min-height:420px;border:1px solid #dfe6ef;border-radius:8px;margin-top:10px;background:#fff}
+.badge.poe-yes{background:#e6f4ea;color:#14602b}.badge.poe-no{background:#fdecea;color:#8a1c1c}

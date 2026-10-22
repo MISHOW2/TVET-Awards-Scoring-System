@@ -46,6 +46,18 @@ window.addNominee=run(async()=>{
  await refresh();
  alert(wasEdit?"Nominee updated.":"Nominee added.");
 });
+// Attach, replace or remove one nominee's PoE without opening the whole edit form.
+window.attachPoe=run(async id=>{
+ const n=data.nominees.find(x=>String(x.id)===String(id));
+ if(!n)return alert("That nominee is no longer on the register. Refreshing.");
+ const v=prompt("Paste the Google Drive link (or file ID) of the PoE PDF for "+n.name+".\n\nLeave it empty and press OK to remove the current PoE.","");
+ if(v===null)return;
+ const link=v.trim();
+ busy(link?"Linking the PoE...":"Removing the PoE...");
+ try{await api("setPoe",{id:String(id),poe:link},true);detailCache={};}finally{busy(false)}
+ await refresh();
+ alert(link?"PoE linked to "+n.name+".":"PoE removed from "+n.name+".");
+});
 // Identify the nominee by id, not by row position.
 window.deleteNominee=run(async id=>{
  const n=data.nominees.find(x=>x.id===id);

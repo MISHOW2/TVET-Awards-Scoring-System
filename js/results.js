@@ -6,8 +6,9 @@ window.auditorSignIn=run(async()=>{
  const n=($('audName')||{}).value||"",c=($('audCode')||{}).value||"";
  if(!n.trim()||!c.trim())throw new Error("Choose your name and enter your code.");
  AUD={name:n.trim(),code:c.trim()};
+ const keepPin=PIN;PIN=null;   // an admin session would hide the auditor's own sign-in
  try{await refresh();if(data.role!=="auditor")throw new Error("Name or code not recognised.")}
- catch(e){AUD=null;data.me=undefined;data.role=undefined;throw e}
+ catch(e){PIN=keepPin;AUD=null;data.me=undefined;data.role=undefined;throw e}
  updateAll();
 });
 window.renderResults=function(){

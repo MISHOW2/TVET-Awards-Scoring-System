@@ -23,9 +23,10 @@ function updateAll(){
 }
 function renderNominees(){
  const el=document.getElementById("nomineeList");if(!data.nominees.length){el.innerHTML='<div class="empty">No nominees added yet.</div>';return}
- el.innerHTML='<p class="muted">'+data.nominees.length+' on the register.</p><div class="tablewrap"><table><tr><th>ID</th><th>Nominee</th><th>College</th><th>Category</th><th></th></tr>'+data.nominees.map(n=>`<tr${String(n.id)===editingNominee?' style="background:#fdf6e3"':''}><td>${escHTML(n.id)}</td><td><b>${escHTML(n.name)}</b></td><td>${escHTML(n.college)}</td><td><span class="badge">${escHTML(categories[n.cat]?categories[n.cat][0]:"")}</span></td><td><button class="btn" data-edit="${escHTML(n.id)}">Edit</button> <button class="btn red" data-del="${escHTML(n.id)}">Delete</button></td></tr>`).join("")+"</table></div>";
+ el.innerHTML='<p class="muted">'+data.nominees.length+' on the register.</p><div class="tablewrap"><table><tr><th>ID</th><th>Nominee</th><th>College</th><th>Category</th><th></th></tr>'+data.nominees.map(n=>`<tr${String(n.id)===editingNominee?' style="background:#fdf6e3"':''}><td>${escHTML(n.id)}</td><td><b>${escHTML(n.name)}</b></td><td>${escHTML(n.college)}</td><td><span class="badge">${escHTML(categories[n.cat]?categories[n.cat][0]:"")}</span></td><td>${n.poe?'<span class="badge poe-yes">PoE</span>':'<span class="badge poe-no">No PoE</span>'} <button class="btn" data-poe="${escHTML(n.id)}">PoE</button> <button class="btn" data-edit="${escHTML(n.id)}">Edit</button> <button class="btn red" data-del="${escHTML(n.id)}">Delete</button></td></tr>`).join("")+"</table></div>";
  el.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>deleteNominee(b.dataset.del));
  el.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>editNominee(b.dataset.edit));
+ el.querySelectorAll("[data-poe]").forEach(b=>b.onclick=()=>attachPoe(b.dataset.poe));
 }
 function deleteNominee(id){if(confirm("Delete this nominee and their scores?")){data.nominees=data.nominees.filter(n=>n.id!==id);data.scores=data.scores.filter(s=>s.nomineeId!==id);save()}}
 function renderScoreSelect(){let s=document.getElementById("scoreNominee");s.innerHTML='<option value="">-- Select nominee --</option>'+data.nominees.map(n=>`<option value="${escHTML(n.id)}">${escHTML(n.name)} \u2014 ${escHTML(categories[n.cat]?categories[n.cat][0]:"")}</option>`).join("")}
