@@ -51,3 +51,14 @@ Each nominee can have one PoE, a PDF kept in Google Drive. Only the Drive file I
 4. Judges and auditors see **View the PoE here** (opens inside the page) and **Open in a new tab** above the nomination details. A nominee with no PoE shows "No PoE has been linked".
 
 After editing `Code.gs`, redeploy: Deploy > Manage deployments > pencil > Version: New version > Deploy.
+
+## PoEs that stay on SharePoint / OneDrive (no download or upload)
+A PoE can be a link to a file on SharePoint or OneDrive instead of a Google Drive file. Only the link is stored.
+1. Judges and auditors must be able to open the SharePoint folder (the owner shares it with them; the app cannot grant that).
+2. In the Google Sheet, open the **PoE Files** tab and paste the PoE file names in column A (a path such as `Folder/File.pdf` is fine). Column B can hold each file's own link.
+3. Settings tab: `poeBaseUrl` = the address of the SharePoint folder that holds the files (used where column B is empty).
+4. Apps Script editor: choose `linkPoEsFromList` and press Run. Files are matched to nominees by name and college; existing links are never overwritten.
+SharePoint PoEs open in a new tab (SharePoint does not allow embedding here). Google Drive PoEs still open inside the page.
+
+## Linking PoEs from a Drive folder laid out as Category / Lecturer / files
+`linkPoEs` reads the whole folder tree. The lecturer's folder name identifies the nominee (the category folder breaks ties when one person is nominated in two categories). Only a PDF whose name contains "Portfolio of Evidence" or "PoE" is linked. Recommendation letters, presentations and anything inside a "Supporting Documents" folder are ignored. A lecturer folder with two PoE-named PDFs, or with no PoE-named PDF, is left for a person (use the Attach PoE button). The result message lists what was linked, ignored, unmatched and ambiguous.

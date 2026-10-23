@@ -61,7 +61,7 @@ $('nomClear').onclick=()=>{nomFilter.q="";nomFilter.noPoe=false;nomFilter.cat=""
 window.attachPoe=run(async id=>{
  const n=data.nominees.find(x=>String(x.id)===String(id));
  if(!n)return alert("That nominee is no longer on the register. Refreshing.");
- const v=prompt("Paste the Google Drive link (or file ID) of the PoE PDF for "+n.name+".\n\nLeave it empty and press OK to remove the current PoE.","");
+ const v=prompt("Paste the Google Drive or SharePoint link of the PoE PDF for "+n.name+".\n\nLeave it empty and press OK to remove the current PoE.","");
  if(v===null)return;
  const link=v.trim();
  busy(link?"Linking the PoE...":"Removing the PoE...");
