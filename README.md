@@ -23,6 +23,7 @@ js/                   app code, loaded in this order (see index.html)
   settings.js         settings page
   export.js           Excel master export
   nomination-details.js  nomination details view and admin form fields
+  search.js           nominee search box and PoE filter
   ui.js               refresh wrapper (drop-downs, counts, panels)
   handbook.js         rubrics, declarations, moderation report
   audit.js            audit trail and read-only auditor behaviour

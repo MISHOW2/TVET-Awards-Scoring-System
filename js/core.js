@@ -21,9 +21,17 @@ function updateAll(){
  let avg=data.scores.length?data.scores.reduce((a,s)=>a+s.total,0)/data.scores.length:0;document.getElementById("statAverage").textContent=avg.toFixed(1)+"%";
  renderNominees();renderScoreSelect();renderResults();
 }
+// Search and "no PoE" filter for the nominee list (the admin attaches 198 PoEs one by one, so finding a person has to be quick).
+window.nomFilter={q:"",noPoe:false};
+function nomVisible(){
+ const fold=s=>String(s==null?"":s).normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase(),f=window.nomFilter,qs=fold(f.q).split(/\s+/).filter(Boolean);
+ return data.nominees.filter(n=>(!f.noPoe||!n.poe)&&qs.every(w=>fold(n.name+" "+n.college+" "+n.id+" "+(categories[n.cat]?categories[n.cat][0]:"")).includes(w)));
+}
 function renderNominees(){
  const el=document.getElementById("nomineeList");if(!data.nominees.length){el.innerHTML='<div class="empty">No nominees added yet.</div>';return}
- el.innerHTML='<p class="muted">'+data.nominees.length+' on the register.</p><div class="tablewrap"><table><tr><th>ID</th><th>Nominee</th><th>College</th><th>Category</th><th></th></tr>'+data.nominees.map(n=>`<tr${String(n.id)===editingNominee?' style="background:#fdf6e3"':''}><td>${escHTML(n.id)}</td><td><b>${escHTML(n.name)}</b></td><td>${escHTML(n.college)}</td><td><span class="badge">${escHTML(categories[n.cat]?categories[n.cat][0]:"")}</span></td><td>${n.poe?'<span class="badge poe-yes">PoE</span>':'<span class="badge poe-no">No PoE</span>'} <button class="btn" data-poe="${escHTML(n.id)}">PoE</button> <button class="btn" data-edit="${escHTML(n.id)}">Edit</button> <button class="btn red" data-del="${escHTML(n.id)}">Delete</button></td></tr>`).join("")+"</table></div>";
+ const list=nomVisible();
+ if(!list.length){el.innerHTML='<p class="muted">'+data.nominees.length+' on the register.</p><div class="empty">No nominee matches that search.</div>';return}
+ el.innerHTML='<p class="muted">'+(list.length===data.nominees.length?data.nominees.length+' on the register.':'Showing '+list.length+' of '+data.nominees.length+'.')+' '+data.nominees.filter(n=>!n.poe).length+' without a PoE.</p><div class="tablewrap"><table><tr><th>ID</th><th>Nominee</th><th>College</th><th>Category</th><th></th></tr>'+list.map(n=>`<tr${String(n.id)===editingNominee?' style="background:#fdf6e3"':''}><td>${escHTML(n.id)}</td><td><b>${escHTML(n.name)}</b></td><td>${escHTML(n.college)}</td><td><span class="badge">${escHTML(categories[n.cat]?categories[n.cat][0]:"")}</span></td><td>${n.poe?'<span class="badge poe-yes">PoE</span>':'<span class="badge poe-no">No PoE</span>'} <button class="btn" data-poe="${escHTML(n.id)}">PoE</button> <button class="btn" data-edit="${escHTML(n.id)}">Edit</button> <button class="btn red" data-del="${escHTML(n.id)}">Delete</button></td></tr>`).join("")+"</table></div>";
  el.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>deleteNominee(b.dataset.del));
  el.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>editNominee(b.dataset.edit));
  el.querySelectorAll("[data-poe]").forEach(b=>b.onclick=()=>attachPoe(b.dataset.poe));

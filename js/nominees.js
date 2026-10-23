@@ -46,6 +46,12 @@ window.addNominee=run(async()=>{
  await refresh();
  alert(wasEdit?"Nominee updated.":"Nominee added.");
 });
+// Search box and "only without a PoE" filter above the nominee list.
+$('nomineeList').insertAdjacentHTML("beforebegin",'<div id="nomSearchBar" class="nsearch" style="display:none"><input id="nomSearch" type="search" placeholder="Search by name, college, ID or award" autocomplete="off" aria-label="Search nominees"><label class="nonly"><input type="checkbox" id="nomNoPoe"> Only nominees without a PoE</label><button class="btn" id="nomClear" type="button">Clear</button></div>');
+$('nomSearch').oninput=()=>{nomFilter.q=$('nomSearch').value;renderNominees()};
+$('nomNoPoe').onchange=()=>{nomFilter.noPoe=$('nomNoPoe').checked;renderNominees()};
+$('nomClear').onclick=()=>{nomFilter.q="";nomFilter.noPoe=false;$('nomSearch').value="";$('nomNoPoe').checked=false;renderNominees();$('nomSearch').focus()};
+{const base=window.renderNominees;window.renderNominees=function(){base();$('nomSearchBar').style.display=((PIN||data.me)&&(data.nominees||[]).length)?"":"none"}}
 // Attach, replace or remove one nominee's PoE without opening the whole edit form.
 window.attachPoe=run(async id=>{
  const n=data.nominees.find(x=>String(x.id)===String(id));
@@ -57,6 +63,7 @@ window.attachPoe=run(async id=>{
  try{await api("setPoe",{id:String(id),poe:link},true);detailCache={};}finally{busy(false)}
  await refresh();
  alert(link?"PoE linked to "+n.name+".":"PoE removed from "+n.name+".");
+ const s=$('nomSearch');if(s){s.focus();s.select()}   // ready to search for the next person
 });
 // Identify the nominee by id, not by row position.
 window.deleteNominee=run(async id=>{
