@@ -47,11 +47,16 @@ window.addNominee=run(async()=>{
  alert(wasEdit?"Nominee updated.":"Nominee added.");
 });
 // Search box and "only without a PoE" filter above the nominee list.
-$('nomineeList').insertAdjacentHTML("beforebegin",'<div id="nomSearchBar" class="nsearch" style="display:none"><input id="nomSearch" type="search" placeholder="Search by name, college, ID or award" autocomplete="off" aria-label="Search nominees"><label class="nonly"><input type="checkbox" id="nomNoPoe"> Only nominees without a PoE</label><button class="btn" id="nomClear" type="button">Clear</button></div>');
+$('nomineeList').insertAdjacentHTML("beforebegin",'<div id="nomSearchBar" class="nsearch" style="display:none"><input id="nomSearch" type="search" placeholder="Search by name, college, ID or award" autocomplete="off" aria-label="Search nominees"><select id="nomCat" aria-label="Show one award category"></select><label class="nonly"><input type="checkbox" id="nomNoPoe"> Only nominees without a PoE</label><button class="btn" id="nomClear" type="button">Clear</button></div>');
 $('nomSearch').oninput=()=>{nomFilter.q=$('nomSearch').value;renderNominees()};
+$('nomCat').onchange=()=>{nomFilter.cat=$('nomCat').value;renderNominees()};
 $('nomNoPoe').onchange=()=>{nomFilter.noPoe=$('nomNoPoe').checked;renderNominees()};
-$('nomClear').onclick=()=>{nomFilter.q="";nomFilter.noPoe=false;$('nomSearch').value="";$('nomNoPoe').checked=false;renderNominees();$('nomSearch').focus()};
-{const base=window.renderNominees;window.renderNominees=function(){base();$('nomSearchBar').style.display=((PIN||data.me)&&(data.nominees||[]).length)?"":"none"}}
+$('nomClear').onclick=()=>{nomFilter.q="";nomFilter.noPoe=false;nomFilter.cat="";$('nomCat').value="";$('nomSearch').value="";$('nomNoPoe').checked=false;renderNominees();$('nomSearch').focus()};
+{const base=window.renderNominees;window.renderNominees=function(){
+  const all=data.nominees||[],cs=$('nomCat'),cnt=categories.map((c,i)=>all.filter(n=>n.cat===i).length);
+  cs.innerHTML='<option value="">All categories ('+all.length+')</option>'+categories.map((c,i)=>'<option value="'+i+'">'+escHTML(c[0])+' ('+cnt[i]+')</option>').join("");
+  cs.value=nomFilter.cat;if(cs.value!==nomFilter.cat){nomFilter.cat="";cs.value=""}
+  base();$('nomSearchBar').style.display=((PIN||data.me)&&all.length)?"":"none"}}
 // Attach, replace or remove one nominee's PoE without opening the whole edit form.
 window.attachPoe=run(async id=>{
  const n=data.nominees.find(x=>String(x.id)===String(id));

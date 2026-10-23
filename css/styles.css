@@ -101,3 +101,11 @@ table{width:100%;border-collapse:collapse}th,td{padding:11px;border-bottom:1px s
 .nsearch input[type=search]{flex:1 1 280px;min-width:200px;margin:0}
 .nsearch .nonly{display:flex;gap:6px;align-items:center;font-size:14px;margin:0;font-weight:600;white-space:nowrap}
 .nsearch .nonly input{width:auto;margin:0}
+
+/* ---- Nominees by category ---- */
+.nsearch select{max-width:100%}
+.grouprow td{background:#eaf1f9;color:#0b1f3a;padding:9px 10px;border-top:2px solid #145da0}
+#nomineeList .tablewrap{max-height:62vh}
+#categoryTable td.num,#categoryTable th.num{text-align:center;white-space:nowrap}
+#categoryTable tr.total td{font-weight:700;border-top:2px solid #145da0;background:#f4f7fb}
+#scoreHint{margin:4px 0 0}

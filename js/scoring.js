@@ -25,6 +25,7 @@ function renderMyScores(){
   (todo.length?'<p class="muted" style="margin-top:12px"><b>Still to score:</b> '+todo.map(n=>escHTML(n.name)).join(", ")+'</p>':
     (mine.length?'<div class="notice" style="margin-top:12px"><b>That is everyone.</b> You have scored or recused yourself from every nominee on the register.</div>':''));
  el.querySelectorAll("[data-reopen]").forEach(b=>b.onclick=()=>{
+  if($('scoreCategory')&&$('scoreCategory').value){$('scoreCategory').value="";renderScoreSelect()}   // the category filter must not hide the nominee being reopened
   $('scoreNominee').value=b.dataset.reopen;
   loadScoreForm();
   $('scoreForm').scrollIntoView({behavior:"smooth",block:"center"});
