@@ -3,62 +3,53 @@
 Static web app (Vercel) + Google Apps Script + Google Sheet. No build step.
 
 ## Structure
-
 ```
-index.html            page markup only (all pages, header, script tags)
-css/styles.css        all styles
-assets/logo.webp      DHET logo
-js/                   app code, loaded in this order (see index.html)
-  config.js           SHEET_URL, categories, colleges, scoring scale, bands, handbook text
-  utils.js            small helpers ($, escHTML, pct, bandOf, parseR)
-  core.js             page shell, local state, original renderers
-  api.js              requests to the Apps Script, busy overlay, scoped refresh
-  auth.js             judge sign-in and admin PIN guard
-  nominees.js         nominee register
-  import.js           bulk import of the nominations workbook
-  scoring.js          judge scoring page
-  results.js          results leaderboard and auditor sign-in
-  judges.js           judge panel (admin)
-  help.js             built-in help page
-  settings.js         settings page
-  export.js           Excel master export
-  nomination-details.js  nomination details view and admin form fields
-  search.js           nominee search box and PoE filter
-  ui.js               refresh wrapper (drop-downs, counts, panels)
-  handbook.js         rubrics, declarations, moderation report
-  audit.js            audit trail and read-only auditor behaviour
-  main.js             start-up and 2-minute refresh timer (must load last)
-apps-script/Code.gs   paste into Extensions > Apps Script of the Google Sheet (not served by Vercel)
-docs/                 guides (PDF)
+index.html              page shell (header, tabs, script tags in load order)
+css/styles.css          all styles, in numbered sections
+assets/logo.webp        DHET logo
+js/                     one file per job, loaded in this order (see index.html)
+  config.js             API address, categories, criteria, scale, guidance, detail fields, PoE link patterns
+  utils.js              $, esc, key, toast, file download, CSV reader
+  state.js              the app's state (S), live(), creds(), the saved sign-in (survives a refresh)
+  api.js                post(), the loading overlay, load() (full and quiet reads)
+  scoring.js            totals, recognition bands, each nominee's result
+  shared.js             helpers used by several pages: this judge's scores, PoE badge, category grouping and totals
+  evidence.js           a nominee's details, PoE links and detail cards
+  shell.js              header, tabs, render() (the one draw routine)
+  signin.js             sign-in page and restoring a session after a refresh
+  judge.js              confidentiality declaration, nominee list, scoring page
+  nominees.js           admin: add, edit, delete, import, attach PoE
+  results.js            leaderboard, selected nominee's panel, audit trail, CSV export
+  declarations.js       declarations page
+  moderation.js         moderation notes and the final report
+  settings.js           settings page (judges needed, spread, open/closed, clear data)
+  help.js               help page
+  main.js               start-up and the 2-minute quiet refresh
+apps-script/Code.gs     paste into Extensions > Apps Script of the Google Sheet (not served by Vercel)
+docs/                   guides (PDF; written for the previous layout, update before circulating)
 ```
+Load order matters only in that `config.js`, `utils.js`, `state.js` and `api.js` come first and `main.js` last.
+Code.gs has six labelled sections: configuration, sheet access, sign-in, reading data, linking PoEs, writing data.
 
 ## Important
-
-- **Load order matters.** Later files wrap functions defined in earlier ones, so keep the order in `index.html`.
-- **SHEET_URL** is in `js/config.js`. It must be the `https://script.google.com/macros/s/.../exec` address of the current deployment.
-- After any change to `apps-script/Code.gs`: Deploy, Manage deployments, pencil, New version, Deploy.
+- `CONFIG.apiUrl` in `js/app.js` must be the `https://script.google.com/macros/s/.../exec` address of the current deployment.
+- After any change to `Code.gs`: Deploy, Manage deployments, pencil, New version, Deploy.
 - Never commit the admin PIN or any judge/auditor codes. They live only in the Google Sheet.
 
-## Portfolio of Evidence (PoE) PDFs
+## Scoring open / closed
+Stored in the Settings tab (`open`). Settings page > Open/Closed > Save settings. When closed the server refuses scores and recusals.
 
-Each nominee can have one PoE, a PDF kept in Google Drive. Only the Drive file ID is stored in the Nominees tab (last column); the PDF itself is never copied into the sheet or this repository.
+## Background update
+Every 2 minutes the app re-reads the sheet quietly. It never redraws while someone is scoring, typing or editing, and only redraws the list when the data changed.
 
-1. **Put the PDFs in a private Drive folder.** Name them with the nominee's name, e.g. `Category_College_Surname_Name_POE_2026.pdf`.
-2. **Link them to nominees**, either way:
-   - In the app (admin PIN): Nominees tab, click **PoE** on a nominee's row and paste the file's Google Drive link. Leave it empty to remove it. The **Edit** form and the bulk-import template also have a PoE column.
-   - In bulk: in the Settings tab add `poeFolder` = the folder ID, then run `linkPoEs` in the Apps Script editor. It matches file names to nominees, never overwrites an existing link, and reports files it could not match.
-3. **Decide who can open the files.** Either share the folder with each judge's Google account (view only), or add `poeShare` = `anyone` in the Settings tab so `linkPoEs` sets matched files to "anyone with the link can view". The link is only ever shown to a signed-in judge, auditor or admin, but anyone who is sent the link could open the file.
-4. Judges and auditors see **View the PoE here** (opens inside the page) and **Open in a new tab** above the nomination details. A nominee with no PoE shows "No PoE has been linked".
+## PoEs (documents and folders)
+Each nominee can have a PoE PDF and a link to their evidence folder.
+- Admin: Nominees > Attach PoE (a PDF link or a Google Drive folder link), or the details panel in Edit, or the import columns.
+- Bulk: Settings tab `poeFolder` = the top Drive folder ID, then run `linkPoEs` in the Apps Script editor. Expected layout: Category / Lecturer name / files. The lecturer folder is matched by name; the PDF called "Portfolio of Evidence" or "PoE" is linked as the PoE document; "Supporting Documents" and other letters are ignored. Existing links are never overwritten.
+- Sharing: share the top folder with the judges' Google accounts (private), or set `poeShare` = `anyone` (anyone with the link, less private).
+- PDFs kept on SharePoint/OneDrive can be linked instead: `linkPoEsFromList` (see comments in Code.gs).
 
-After editing `Code.gs`, redeploy: Deploy > Manage deployments > pencil > Version: New version > Deploy.
-
-## PoEs that stay on SharePoint / OneDrive (no download or upload)
-A PoE can be a link to a file on SharePoint or OneDrive instead of a Google Drive file. Only the link is stored.
-1. Judges and auditors must be able to open the SharePoint folder (the owner shares it with them; the app cannot grant that).
-2. In the Google Sheet, open the **PoE Files** tab and paste the PoE file names in column A (a path such as `Folder/File.pdf` is fine). Column B can hold each file's own link.
-3. Settings tab: `poeBaseUrl` = the address of the SharePoint folder that holds the files (used where column B is empty).
-4. Apps Script editor: choose `linkPoEsFromList` and press Run. Files are matched to nominees by name and college; existing links are never overwritten.
-SharePoint PoEs open in a new tab (SharePoint does not allow embedding here). Google Drive PoEs still open inside the page.
-
-## Linking PoEs from a Drive folder laid out as Category / Lecturer / files
-`linkPoEs` reads the whole folder tree. The lecturer's folder name identifies the nominee (the category folder breaks ties when one person is nominated in two categories). Only a PDF whose name contains "Portfolio of Evidence" or "PoE" is linked. Recommendation letters, presentations and anything inside a "Supporting Documents" folder are ignored. A lecturer folder with two PoE-named PDFs, or with no PoE-named PDF, is left for a person (use the Attach PoE button). The result message lists what was linked, ignored, unmatched and ambiguous.
+## Sessions and PoE links
+- A page refresh does not sign anyone out. The sign-in is kept in the browser tab's session storage until the person presses Sign out or closes the tab/browser. A wrong, changed or locked-out code ends it.
+- The personal code and admin PIN fields are masked while typing.
+- The PoE PDF and the evidence folder open only in a new tab; nothing is embedded in the page.
