@@ -10,20 +10,24 @@ const HEAD={
  Auditors:['Name','Code'],
  Declarations:['Date','Person','Role','Type','Nominee ID'],
  Moderation:['Nominee ID','Nominee','Strengths','Evidence','Achievements','Outcome','Date'],
+ 'PoE Files':['File name or path','Link (optional)'],
  Settings:['Key','Value']};
 
 // Extra nomination details, stored in the Nominees tab after the five core columns.
 // Judges are never sent the fields in JUDGE_HIDDEN (contact details and who nominated).
-const EXTRA=[['source','Source'],['title','Title'],['campus','Campus'],['department','Department'],['designation','Designation'],['status','Status'],['experience','Years of experience'],['province','Province'],['employeeNo','Employee number'],['focus','Focus area (subjects)'],['learners','Annual learners'],['email','Email'],['mobile','Mobile'],['nominator','Nominator'],['relationship','Nominator relationship'],['nominatorContact','Nominator contact'],['nominationDate','Nomination date'],['motivation','Motivation summary'],['why','Why deserving'],['impact','Measurable impact / evidence summary'],['profile','Professional profile'],['philosophy','Teaching philosophy'],['examples','Examples (teaching, curriculum, innovation)'],['evidence','Evidence, previous two academic years'],['poe','PoE (Google Drive link or file ID)']];
+const EXTRA=[['source','Source'],['title','Title'],['campus','Campus'],['department','Department'],['designation','Designation'],['status','Status'],['experience','Years of experience'],['province','Province'],['employeeNo','Employee number'],['focus','Focus area (subjects)'],['learners','Annual learners'],['email','Email'],['mobile','Mobile'],['nominator','Nominator'],['relationship','Nominator relationship'],['nominatorContact','Nominator contact'],['nominationDate','Nomination date'],['motivation','Motivation summary'],['why','Why deserving'],['impact','Measurable impact / evidence summary'],['profile','Professional profile'],['philosophy','Teaching philosophy'],['examples','Examples (teaching, curriculum, innovation)'],['evidence','Evidence, previous two academic years'],['poe','PoE link (Google Drive or SharePoint)'],['poeFolder','PoE folder link (Google Drive folder)']];
 const JUDGE_HIDDEN=['employeeNo','email','mobile','nominator','nominatorContact','nominationDate'];
 const NOM_COLS=5+EXTRA.length;
-const POE_IDX=EXTRA.findIndex(x=>x[0]==='poe');   // the PoE column holds only a Google Drive file ID
-// Accepts a Drive share link or a bare file ID and returns the ID, or '' when it is not one.
+const POE_IDX=EXTRA.findIndex(x=>x[0]==='poe'),FOLDER_IDX=EXTRA.findIndex(x=>x[0]==='poeFolder');   // the PoE column holds only a Google Drive file ID
+// A PoE is either a Google Drive file (only its ID is stored) or a link to a file kept on SharePoint / OneDrive.
+// Accepts a Drive share link, a bare Drive file ID or a SharePoint/OneDrive https link, and returns what to store, or '' when it is none of those.
+const POE_HOST=/^https:\/\/(?:[a-z0-9-]+\.)*(?:sharepoint\.com|sharepoint\.us|1drv\.ms|onedrive\.live\.com)(?:[\/?#]|$)/i;
 function poeId(x){
  const s=String(x==null?'':x).trim();if(!s)return '';
  let m=s.match(/^https:\/\/(?:drive|docs)\.google\.com\/(?:file\/(?:u\/\d+\/)?d\/|open\?id=|uc\?(?:[^#]*&)?id=)([A-Za-z0-9_-]{20,})/);
  if(m)return m[1];
- return /^[A-Za-z0-9_-]{20,}$/.test(s)?s:'';}
+ if(/^[A-Za-z0-9_-]{20,}$/.test(s))return s;
+ return (POE_HOST.test(s)&&s.length<=1800&&!/[\s<>"'\\]/.test(s))?s:'';}
 
 function sh(n){
  let s=SpreadsheetApp.getActive().getSheetByName(n);
@@ -41,7 +45,10 @@ function nomSheet(){
   s.getRange(1,6,s.getMaxRows(),EXTRA.length).setNumberFormat('@');}
  return s;}
 // Nominees are read by column position (ID, Nominee, College, CatIdx, Category), so a differently worded header row cannot hide the data.
-function nomRows(){return nomSheet().getDataRange().getValues().slice(1).filter(r=>String(r[0])!=='').map(r=>({ID:r[0],Nominee:r[1],College:r[2],CatIdx:r[3],Category:r[4],hasPoe:!!String(r[5+POE_IDX]==null?'':r[5+POE_IDX]).trim()}));}
+// A nominee's whole PoE folder on Google Drive. Stored as a full https link, accepted only in this exact shape.
+const FOLDER_RE=/^https:\/\/drive\.google\.com\/drive\/(?:u\/\d+\/)?folders\/([A-Za-z0-9_-]{20,})/;
+function folderLink(x){const m=String(x==null?'':x).trim().match(FOLDER_RE);return m?'https://drive.google.com/drive/folders/'+m[1]:'';}
+function nomRows(){return nomSheet().getDataRange().getValues().slice(1).filter(r=>String(r[0])!=='').map(r=>({ID:r[0],Nominee:r[1],College:r[2],CatIdx:r[3],Category:r[4],hasPoe:!!(String(r[5+POE_IDX]==null?'':r[5+POE_IDX]).trim()||String(r[5+FOLDER_IDX]==null?'':r[5+FOLDER_IDX]).trim())}));}
 function settings(){const o={};rows('Settings').forEach(r=>o[r.Key]=r.Value);return o;}
 function setKey(k,v){const s=sh('Settings'),d=s.getDataRange().getValues();
  for(let i=1;i<d.length;i++)if(d[i][0]===k){s.getRange(i+1,2).setValue(v);return}s.appendRow([k,v]);}
@@ -113,7 +120,7 @@ function readData(b){
  const full=adm||role==='auditor';   // auditors read everything, write nothing
  const all=nomRows();
  // count is public (a number only, no names), so the home page can show it before anyone logs in
- const o={settings:{max:+s.max,judges:+s.judges,qualify:+s.qualify,spread:+s.spread||15},count:all.length,judges:[],nominees:[],scores:[],log:[],recusals:[]};
+ const o={settings:{max:+s.max,judges:+s.judges,qualify:+s.qualify,spread:+s.spread||15,open:String(s.open)!=='false'},count:all.length,judges:[],nominees:[],scores:[],log:[],recusals:[]};
  o.auditorNames=rows('Auditors').map(r=>String(r.Name)).filter(Boolean);   // names only, for the auditor sign-in drop-down
  o.judgeNames=String(s.judgeList||'').split('\n').filter(Boolean);   // names only, never codes: fills the sign-in drop-down
  if(!adm&&!me)return out(o);
@@ -147,38 +154,102 @@ function detailsData(b){
 // Pure matching rule, so it can be tested without Drive: a nominee matches a file when every part of their name
 // is in the file name; failing that, when their surname AND their college are both in the file name.
 // A file that matches more than one nominee, or a nominee with more than one file, is left for a person to link.
+const poeWords=s=>String(s||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+// Nominees whose name fits a folder name: all the nominee's words are in it, or all of the folder's words (two or more) are in the nominee's name.
+function poeByFolder(nominees,folder){const fw=new Set(poeWords(folder).filter(w=>w.length>1)),fl=[...fw];if(!fl.length)return [];
+ return nominees.filter(n=>{const nw=poeWords(n.name).filter(w=>w.length>1);if(!nw.length)return false;
+  return nw.every(w=>fw.has(w))||(fl.length>=2&&fl.every(w=>nw.includes(w)));});}
+// The category folder above a lecturer folder breaks a tie when one person is nominated in more than one category.
+function poePick(hits,path){if(hits.length<2)return hits;const pw=new Set(poeWords((path||[]).join(' ')));
+ const score=n=>poeWords(n.catName).filter(w=>w.length>2&&pw.has(w)).length,top=Math.max(...hits.map(score));
+ const best=hits.filter(n=>score(n)===top);return top>0&&best.length===1?best:hits;}
+// Folders = [{id, path:[names from the top, ending with this folder's own name]}]. Each nominee gets the deepest folder named for them.
+// Anything called "Supporting Documents" (or inside one) is never a lecturer folder.
+function poeFolderMatch(nominees,folders){
+ const out={},unmatched=[],ambiguous=[],label={};nominees.forEach(n=>label[n.id]=n.name);
+ folders.filter(f=>f.path.length&&!f.path.some(p=>/supporting/i.test(p))).forEach(f=>{
+  const name=f.path[f.path.length-1],above=f.path.slice(0,-1);
+  const hits=poePick(poeByFolder(nominees,name),above);
+  if(hits.length===1){const o=out[hits[0].id];
+   if(!o||f.path.length>o.depth)out[hits[0].id]={id:f.id,depth:f.path.length};
+   else if(f.path.length===o.depth&&o.id!==f.id)ambiguous.push('Two folders for '+label[hits[0].id]);}
+  else if(hits.length>1)ambiguous.push(f.path.join('/'));});
+ const links={};Object.keys(out).forEach(id=>links[id]='https://drive.google.com/drive/folders/'+out[id].id);
+ return {links,ambiguous};}
+// Matches PDFs to nominees. Two layouts work:
+//  1. flat: the nominee's name (and college) is in the PDF's file name;
+//  2. folders: Category / Lecturer name / files. The lecturer's folder name identifies the nominee and only the
+//     file called "Portfolio of Evidence" / "PoE" counts as the PoE. Recommendation letters, presentations and
+//     anything inside a "Supporting Documents" folder are ignored.
+// f = {id, name, path:[folder names from the top, optional]}
 function poeMatch(nominees,files){
- const words=s=>String(s||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
- const out={},unmatched=[],ambiguous=[];
- files.forEach(f=>{
-  const fw=new Set(words(f.name.replace(/\.pdf$/i,''))),fk=key(f.name);
-  const hits=nominees.filter(n=>{
-   const nw=words(n.name).filter(w=>w.length>1);if(!nw.length)return false;
+ const words=poeWords;
+ const isPoeName=n=>/portfolio\s*of\s*evidence|(^|[^a-z0-9])poe([^a-z0-9]|$)/i.test(n);
+ const out={},unmatched=[],ambiguous=[];let ignored=0;
+ const byFileName=f=>{const fw=new Set(words(f.name.replace(/\.pdf$/i,''))),fk=key(f.name);
+  return nominees.filter(n=>{const nw=words(n.name).filter(w=>w.length>1);if(!nw.length)return false;
    if(nw.every(w=>fw.has(w)))return true;
    const kc=key(String(n.college||'').replace(/tvet college/i,''));
-   return fw.has(nw[nw.length-1])&&kc.length>3&&fk.includes(kc);});
-  if(hits.length===1)(out[hits[0].id]=out[hits[0].id]||[]).push(f.id);
-  else if(hits.length>1)ambiguous.push(f.name);else unmatched.push(f.name);});
- Object.keys(out).forEach(id=>{if(out[id].length>1){ambiguous.push('Several files for '+id);delete out[id];}else out[id]=out[id][0];});
- return {links:out,unmatched,ambiguous};}
-// RUN from the editor (select linkPoEs > Run) after putting the PoE PDFs in one Drive folder.
-// Settings tab: poeFolder = the folder's ID (the part after /folders/ in its address).
+   return fw.has(nw[nw.length-1])&&kc.length>3&&fk.includes(kc);});};
+ const byFolder=folder=>poeByFolder(nominees,folder),pick=poePick;
+ const label={};nominees.forEach(n=>label[n.id]=n.name);
+ files.forEach(f=>{
+  const path=Array.isArray(f.path)?f.path:[],inSupport=path.some(p=>/supporting/i.test(p));
+  let hits=byFileName(f);
+  if(!hits.length&&path.length){
+   if(inSupport||!isPoeName(f.name)){ignored++;return}
+   for(let i=path.length-1;i>=0&&!hits.length;i--)hits=byFolder(path[i]);}
+  else if(path.length&&hits.length&&inSupport){ignored++;return}
+  const where=(path.length?path.join('/')+'/':'')+f.name;
+  hits=pick(hits,path);
+  if(hits.length===1)(out[hits[0].id]=out[hits[0].id]||[]).push({id:f.id,poeNamed:isPoeName(f.name)});
+  else if(hits.length>1)ambiguous.push(where);else unmatched.push(where);});
+ Object.keys(out).forEach(id=>{let c=out[id];
+  if(c.length>1){const p=c.filter(x=>x.poeNamed);if(p.length)c=p;}
+  if(c.length>1){ambiguous.push('Several PoE files for '+label[id]);delete out[id];}else out[id]=c[0].id;});
+ return {links:out,unmatched,ambiguous,ignored};}
+// Writes matched links into the Nominees tab. Never overwrites an existing link.
+function applyPoeLinks(files,folders){
+ const ns=nomSheet(),d=ns.getDataRange().getValues(),needFile=[],needFolder=[];
+ for(let i=1;i<d.length;i++)if(String(d[i][0])!==''){const o={id:String(d[i][0]),name:d[i][1],college:d[i][2],catName:d[i][4]};
+  if(!String(d[i][5+POE_IDX]||'').trim())needFile.push(o);
+  if(!String(d[i][5+FOLDER_IDX]||'').trim())needFolder.push(o);}
+ const res=poeMatch(needFile,files),fres=folders?poeFolderMatch(needFolder,folders):{links:{},ambiguous:[]},share=String(settings().poeShare||'')==='anyone';
+ let n=0,nf=0;
+ for(let i=1;i<d.length;i++){const key=String(d[i][0]),id=res.links[key],fl=fres.links[key];
+  if(id){ns.getRange(i+1,6+POE_IDX).setNumberFormat('@').setValue(id);n++;
+   if(share&&/^[A-Za-z0-9_-]{20,}$/.test(id))DriveApp.getFileById(id).setSharing(DriveApp.Access.ANYONE_WITH_LINK,DriveApp.Permission.VIEW);}
+  if(fl){ns.getRange(i+1,6+FOLDER_IDX).setNumberFormat('@').setValue(fl);nf++;
+   if(share)DriveApp.getFolderById(fl.split('/').pop()).setSharing(DriveApp.Access.ANYONE_WITH_LINK,DriveApp.Permission.VIEW);}}
+ const msg='Linked '+n+' PoE file(s)'+(folders?' and '+nf+' PoE folder(s)':'')+'. '+(res.ignored?res.ignored+' other documents (letters, supporting documents) were ignored. ':'')+'Files with no match: '+(res.unmatched.join('; ')||'none')+'. Needs a person: '+(res.ambiguous.concat(fres.ambiguous).join('; ')||'none')+'.';
+ Logger.log(msg);try{SpreadsheetApp.getActive().toast(msg,'PoE linking',30)}catch(x){}
+ return msg;}
+function driveWalk(folder,out,path,folders){   // every PDF in the folder and in all folders inside it, with the folder names above it
+ path=path||[];
+ const it=folder.getFilesByType(MimeType.PDF);while(it.hasNext()){const f=it.next();out.push({id:f.getId(),name:f.getName(),path});}
+ const sub=folder.getFolders();while(sub.hasNext()){const c=sub.next(),p=path.concat(c.getName());
+  if(folders)folders.push({id:c.getId(),path:p});driveWalk(c,out,p,folders);}return out;}
+// OPTION A, PDFs in Google Drive. RUN from the editor (select linkPoEs > Run).
+// Settings tab: poeFolder = the folder's ID (the part after /folders/ in its address). Sub-folders are searched too.
 // Optional: poeShare = anyone  -> each matched file is set to "anyone with the link can view".
-// Leave poeShare out and share the folder yourself with the judges. Existing links are never overwritten.
+// Leave poeShare out and share the folder yourself with the judges.
 function linkPoEs(){
  const fid=String(settings().poeFolder||'').trim();
  if(!fid)throw new Error('Add a row to the Settings tab: poeFolder = the Drive folder ID.');
- const it=DriveApp.getFolderById(fid).getFilesByType(MimeType.PDF),files=[];
- while(it.hasNext()){const f=it.next();files.push({id:f.getId(),name:f.getName()});}
- const ns=nomSheet(),d=ns.getDataRange().getValues(),nominees=[];
- for(let i=1;i<d.length;i++)if(String(d[i][0])!==''&&!String(d[i][5+POE_IDX]||'').trim())nominees.push({id:String(d[i][0]),name:d[i][1],college:d[i][2]});
- const res=poeMatch(nominees,files);let n=0;
- for(let i=1;i<d.length;i++){const id=res.links[String(d[i][0])];
-  if(id){ns.getRange(i+1,6+POE_IDX).setNumberFormat('@').setValue(id);n++;
-   if(String(settings().poeShare||'')==='anyone')DriveApp.getFileById(id).setSharing(DriveApp.Access.ANYONE_WITH_LINK,DriveApp.Permission.VIEW);}}
- const msg='Linked '+n+' PoE file(s). Files with no match: '+(res.unmatched.join('; ')||'none')+'. Needs a person: '+(res.ambiguous.join('; ')||'none')+'.';
- Logger.log(msg);try{SpreadsheetApp.getActive().toast(msg,'PoE linking',30)}catch(x){}
- return msg;}
+ const folders=[],files=driveWalk(DriveApp.getFolderById(fid),[],[],folders);
+ return applyPoeLinks(files,folders);}
+// OPTION B, PDFs left on SharePoint / OneDrive (nothing is downloaded or uploaded). RUN from the editor (select linkPoEsFromList > Run).
+// Paste the PoE file names into the "PoE Files" tab, column A (a path such as Folder/File.pdf is fine). Column B may hold each file's link;
+// when it is empty the link is built from Settings: poeBaseUrl = the address of the SharePoint folder that holds the files.
+function linkPoEsFromList(){
+ const base=String(settings().poeBaseUrl||'').trim().replace(/\/+$/,''),files=[];
+ sh('PoE Files').getDataRange().getValues().slice(1).forEach(r=>{
+  const raw=String(r[0]||'').trim().replace(/\\/g,'/'),given=String(r[1]||'').trim();if(!raw)return;
+  const parts=raw.split('/'),name=parts.pop();if(!/\.pdf$/i.test(name))return;
+  const link=given||(base?base+'/'+raw.split('/').map(encodeURIComponent).join('/'):'');
+  const id=poeId(link);if(id&&!/^[A-Za-z0-9_-]{20,}$/.test(id))files.push({id,name,path:parts});});
+ if(!files.length)throw new Error('No usable rows. Fill the PoE Files tab (file names) and either column B or Settings > poeBaseUrl (a SharePoint/OneDrive address).');
+ return applyPoeLinks(files);}
 
 function doPost(e){
  let b0;try{b0=JSON.parse(e.postData.contents)}catch(x){return out({error:'Bad request.'})}
@@ -198,7 +269,8 @@ function doPost(e){
     for(let i=1;i<nd.length;i++)if(String(nd[i][0])===b.id)k=i;
     const row=[b.id,t(b.name),b.college,b.cat,b.catName];
     const ex=b.extra?EXTRA.map(([key])=>{const raw=String(b.extra[key]==null?'':b.extra[key]).slice(0,20000);
-     if(key==='poe'){const id=poeId(raw);if(raw.trim()&&!id)throw new Error('The PoE must be a Google Drive file link or file ID.');return id;}
+     if(key==='poe'){const id=poeId(raw);if(raw.trim()&&!id)throw new Error('The PoE must be a Google Drive link, a Drive file ID, or a SharePoint/OneDrive link.');return id;}
+     if(key==='poeFolder'){const f=folderLink(raw);if(raw.trim()&&!f)throw new Error('The PoE folder must be a Google Drive folder link (drive.google.com/drive/folders/...).');return f;}
      return t(raw);}):null;   // no extra sent = keep what is stored
     if(k>=0){                                   // edit: update in place and keep the Scores labels in step
      ns.getRange(k+1,1,1,row.length).setValues([row]);
@@ -211,13 +283,17 @@ function doPost(e){
     const ns=nomSheet(),nd=ns.getDataRange().getValues();let k=-1;
     for(let i=1;i<nd.length;i++)if(String(nd[i][0])===String(b.id))k=i;
     if(k<0)throw new Error('Unknown nominee.');
-    const raw=String(b.poe==null?'':b.poe).trim(),id=poeId(raw);
-    if(raw&&!id)throw new Error('That is not a Google Drive file link or file ID.');
-    ns.getRange(k+1,6+POE_IDX).setNumberFormat('@').setValue(id);
+    if(b.poe!==undefined){const raw=String(b.poe==null?'':b.poe).trim(),id=poeId(raw);
+     if(raw&&!id)throw new Error('That is not a Google Drive link, a Drive file ID, or a SharePoint/OneDrive link.');
+     ns.getRange(k+1,6+POE_IDX).setNumberFormat('@').setValue(id);}
+    if(b.folder!==undefined){const raw=String(b.folder==null?'':b.folder).trim(),f=folderLink(raw);
+     if(raw&&!f)throw new Error('That is not a Google Drive folder link (drive.google.com/drive/folders/...).');
+     ns.getRange(k+1,6+FOLDER_IDX).setNumberFormat('@').setValue(f);}
     break;}
    case 'deleteNominee':need();
     nomSheet();del('Nominees',r=>String(r[0])===b.id);del('Scores',r=>String(r[0])===b.id);break;
-   case 'score':{const rec=b.rec,log=b.log,n=nomRows().find(r=>String(r.ID)===rec.nomineeId);
+   case 'score':{if(String(s.open)==='false')throw new Error('Scoring is closed.');
+    const rec=b.rec,log=b.log,n=nomRows().find(r=>String(r.ID)===rec.nomineeId);
     if(!n)throw new Error('Unknown nominee.');
     const me=okJudge(rec.judge,b.code);if(!me)throw new Error('Name or code not recognised.');
     rec.judge=me;
@@ -251,7 +327,8 @@ function doPost(e){
     if(mk>=0)ms.getRange(mk+1,1,1,mrow.length).setValues([mrow]);else ms.appendRow(mrow);
     break;}
    case 'recusal':
-    {const me=okJudge(b.judge,b.code);if(!me)throw new Error('Name or code not recognised.');
+    {if(String(s.open)==='false')throw new Error('Scoring is closed.');
+    const me=okJudge(b.judge,b.code);if(!me)throw new Error('Name or code not recognised.');
     if(!rows('Recusals').some(r=>String(r['Nominee ID'])===b.nomineeId&&r.Judge===me))sh('Recusals').appendRow([now,b.nomineeId,me]);
     del('Scores',r=>String(r[0])===b.nomineeId&&r[4]===me);}break;
    case 'settings':need();{
@@ -259,6 +336,7 @@ function doPost(e){
     const stranded=[...new Set(rows('Scores').map(r=>r.Judge))].filter(j=>j&&!keep.includes(j));
     if(stranded.length)throw new Error(stranded[0]+' has submitted scores, so cannot be renamed or removed. Correct the name in the Scores tab of the sheet as well.');}
     setKey('max',Math.max(1,Math.min(100,+b.max||5)));setKey('judges',Math.max(1,+b.judges||3));setKey('qualify',+b.qualify||70);setKey('spread',+b.spread||15);
+    if(b.open!==undefined)setKey('open',b.open===false?'false':'true');
     setKey('judgeList',(b.judgeList||[]).map(x=>String(x).trim()).filter(Boolean).join('\n'));
     ensureCodes();
     if(b.newPin)setKey('pin',String(b.newPin));break;
