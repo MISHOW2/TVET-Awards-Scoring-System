@@ -4,15 +4,32 @@ Static web app (Vercel) + Google Apps Script + Google Sheet. No build step.
 
 ## Structure
 ```
-index.html            page shell (header, tabs, script tags)
-css/styles.css        all styles
-assets/logo.webp      DHET logo
-js/app.js             config (CONFIG.apiUrl), state, API calls, sign-in, judge list, results, background refresh
-js/views.js           screens: sign-in, scoring (COI, PoE, details), nominees admin, declarations, moderation, settings, help
-apps-script/Code.gs   paste into Extensions > Apps Script of the Google Sheet (not served by Vercel)
-docs/                 guides (PDF; written for the previous layout, update before circulating)
+index.html              page shell (header, tabs, script tags in load order)
+css/styles.css          all styles, in numbered sections
+assets/logo.webp        DHET logo
+js/                     one file per job, loaded in this order (see index.html)
+  config.js             API address, categories, criteria, scale, guidance, detail fields, PoE link patterns
+  utils.js              $, esc, key, toast, file download, CSV reader
+  state.js              the app's state (S), live(), creds(), the saved sign-in (survives a refresh)
+  api.js                post(), the loading overlay, load() (full and quiet reads)
+  scoring.js            totals, recognition bands, each nominee's result
+  shared.js             helpers used by several pages: this judge's scores, PoE badge, category grouping and totals
+  evidence.js           a nominee's details, PoE links and detail cards
+  shell.js              header, tabs, render() (the one draw routine)
+  signin.js             sign-in page and restoring a session after a refresh
+  judge.js              confidentiality declaration, nominee list, scoring page
+  nominees.js           admin: add, edit, delete, import, attach PoE
+  results.js            leaderboard, selected nominee's panel, audit trail, CSV export
+  declarations.js       declarations page
+  moderation.js         moderation notes and the final report
+  settings.js           settings page (judges needed, spread, open/closed, clear data)
+  help.js               help page
+  main.js               start-up and the 2-minute quiet refresh
+apps-script/Code.gs     paste into Extensions > Apps Script of the Google Sheet (not served by Vercel)
+docs/                   guides (PDF; written for the previous layout, update before circulating)
 ```
-Load order matters: `app.js` first, `views.js` second (it replaces some of app.js's screens).
+Load order matters only in that `config.js`, `utils.js`, `state.js` and `api.js` come first and `main.js` last.
+Code.gs has six labelled sections: configuration, sheet access, sign-in, reading data, linking PoEs, writing data.
 
 ## Important
 - `CONFIG.apiUrl` in `js/app.js` must be the `https://script.google.com/macros/s/.../exec` address of the current deployment.
