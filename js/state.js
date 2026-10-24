@@ -11,6 +11,8 @@ const S = {
   mode: 'judge',
   err: '',
   sel: {},
+  ps: 5, // rows per page in the long lists
+  pg: {}, // current page (0-based) of each list: judge, admin, results
   d: {
     settings: { judges: 3, qualify: 70, spread: 15, open: true },
     judgeNames: [],

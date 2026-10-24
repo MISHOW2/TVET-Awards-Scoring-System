@@ -13,7 +13,7 @@ js/                     one file per job, loaded in this order (see index.html)
   state.js              the app's state (S), live(), creds(), the saved sign-in (survives a refresh)
   api.js                post(), the loading overlay, load() (full and quiet reads)
   scoring.js            totals, recognition bands, each nominee's result
-  shared.js             helpers used by several pages: this judge's scores, PoE badge, category grouping and totals
+  shared.js             helpers used by several pages: this judge's scores, PoE badge, category grouping and totals, paging
   evidence.js           a nominee's details, PoE links and detail cards
   shell.js              header, tabs, render() (the one draw routine)
   signin.js             sign-in page and restoring a session after a refresh
