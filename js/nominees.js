@@ -58,16 +58,17 @@ $('nomClear').onclick=()=>{nomFilter.q="";nomFilter.noPoe=false;nomFilter.cat=""
   cs.value=nomFilter.cat;if(cs.value!==nomFilter.cat){nomFilter.cat="";cs.value=""}
   base();$('nomSearchBar').style.display=((PIN||data.me)&&all.length)?"":"none"}}
 // Attach, replace or remove one nominee's PoE without opening the whole edit form.
+// A Google Drive folder link goes into the "PoE folder" field; anything else is the PoE document.
 window.attachPoe=run(async id=>{
  const n=data.nominees.find(x=>String(x.id)===String(id));
  if(!n)return alert("That nominee is no longer on the register. Refreshing.");
- const v=prompt("Paste the Google Drive or SharePoint link of the PoE PDF for "+n.name+".\n\nLeave it empty and press OK to remove the current PoE.","");
+ const v=prompt("Paste a link for "+n.name+":\n- a Google Drive or SharePoint link to the PoE PDF, or\n- a Google Drive FOLDER link with all of their evidence.\n\nLeave it empty and press OK to remove both.","");
  if(v===null)return;
- const link=v.trim();
+ const link=v.trim(),isFolder=/drive\.google\.com\/drive\/(?:u\/\d+\/)?folders\//.test(link);
  busy(link?"Linking the PoE...":"Removing the PoE...");
- try{await api("setPoe",{id:String(id),poe:link},true);detailCache={};}finally{busy(false)}
+ try{await api("setPoe",link?(isFolder?{id:String(id),folder:link}:{id:String(id),poe:link}):{id:String(id),poe:"",folder:""},true);detailCache={};}finally{busy(false)}
  await refresh();
- alert(link?"PoE linked to "+n.name+".":"PoE removed from "+n.name+".");
+ alert(link?(isFolder?"PoE folder linked to ":"PoE linked to ")+n.name+".":"PoE removed from "+n.name+".");
  const s=$('nomSearch');if(s){s.focus();s.select()}   // ready to search for the next person
 });
 // Identify the nominee by id, not by row position.

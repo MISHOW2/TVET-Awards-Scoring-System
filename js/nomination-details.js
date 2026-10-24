@@ -21,14 +21,16 @@ async function fetchDetails(id){
 // from Drive, so it is never copied into this page or the repo.
 const POE_RE=/^[A-Za-z0-9_-]{20,}$/;
 const POE_URL=/^https:\/\/(?:[a-z0-9-]+\.)*(?:sharepoint\.com|sharepoint\.us|1drv\.ms|onedrive\.live\.com)(?:[\/?#]|$)/i;
+const POE_FOLDER=/^https:\/\/drive\.google\.com\/drive\/folders\/[A-Za-z0-9_-]{20,}$/;
 function poeHTML(f){
- const id=String(f.poe||"").trim(),head='<div class="poebox"><h4>Portfolio of Evidence (PDF)</h4>';
- if(POE_RE.test(id))return head+'<button class="btn gold" data-poeview="'+escHTML(id)+'">View the PoE here</button> '+
-  '<a class="btn" target="_blank" rel="noopener noreferrer" href="https://drive.google.com/file/d/'+encodeURIComponent(id)+'/view">Open in a new tab</a>'+
-  '<p class="muted" style="margin:8px 0 0">If Google asks you to sign in or says you need access, ask the organisers to share the file with you.</p><div class="poeframe"></div></div>';
- if(POE_URL.test(id)&&id.length<=1800&&!/[\s<>"'\\]/.test(id))return head+'<a class="btn gold" target="_blank" rel="noopener noreferrer" href="'+escHTML(id)+'">Open the PoE (new tab)</a>'+
-  '<p class="muted" style="margin:8px 0 0">This PoE is kept on SharePoint/OneDrive. If it asks you to sign in or says you need access, ask the organisers.</p></div>';
- return head+'<p class="muted">No PoE has been linked to this nominee yet. Ask the organisers before scoring.</p></div>';
+ const id=String(f.poe||"").trim(),fold=String(f.poeFolder||"").trim(),head='<div class="poebox"><h4>Portfolio of Evidence</h4>';
+ let out="";
+ if(POE_RE.test(id))out+='<p class="muted" style="margin:0 0 6px"><b>The PoE document (PDF)</b></p><button class="btn gold" data-poeview="'+escHTML(id)+'">View the PoE here</button> '+
+  '<a class="btn" target="_blank" rel="noopener noreferrer" href="https://drive.google.com/file/d/'+encodeURIComponent(id)+'/view">Open in a new tab</a><div class="poeframe"></div>';
+ else if(POE_URL.test(id)&&id.length<=1800&&!/[\s<>"'\\]/.test(id))out+='<p class="muted" style="margin:0 0 6px"><b>The PoE document (SharePoint/OneDrive)</b></p><a class="btn gold" target="_blank" rel="noopener noreferrer" href="'+escHTML(id)+'">Open the PoE (new tab)</a>';
+ if(POE_FOLDER.test(fold))out+='<p class="muted" style="margin:'+(out?'14px':'0')+' 0 6px"><b>All the evidence for this nominee</b> (videos, certificates, letters, supporting documents)</p><a class="btn gold" target="_blank" rel="noopener noreferrer" href="'+escHTML(fold)+'">Open the PoE folder (new tab)</a>';
+ if(!out)return head+'<p class="muted">No PoE has been linked to this nominee yet. Ask the organisers before scoring.</p></div>';
+ return head+out+'<p class="muted" style="margin:10px 0 0">If Google or SharePoint asks you to sign in or says you need access, ask the organisers to share it with you.</p></div>';
 }
 // One delegated handler: the viewer is built only when asked for, so a 13 MB PDF is not loaded for every nominee.
 document.addEventListener("click",e=>{
@@ -87,7 +89,7 @@ window.renderNominees=function(){
 // Short fields run two to a row; the long motivation and evidence boxes span the full width.
 $('addRight').insertAdjacentHTML("beforeend",'<details class="dbox" id="nExtra" open><summary>Nomination details</summary><p class="muted">Judges read these when they score this nominee, so fill in the motivation and evidence. Contact details and who nominated them are kept from judges.</p><div class="xgrid">'+
  EXTRA_FIELDS.map(([k,l])=>'<div class="'+(DETAIL_LONG.has(k)?'xwide':'')+'"><label>'+escHTML(l)+'</label>'+(DETAIL_LONG.has(k)?'<textarea id="x_'+k+'" style="min-height:80px"></textarea>':'<input id="x_'+k+'">')+'</div>').join("")+'</div></details>');
-{const p=$("x_poe");p.placeholder="Paste the Google Drive or SharePoint link of the PDF";p.autocomplete="off";const m=$("x_mobile");m.type="tel";m.placeholder="+27 82 123 4567";m.onblur=()=>{m.value=normPhone(m.value)}}
+{const p=$("x_poe");p.placeholder="Paste the Google Drive or SharePoint link of the PDF";{const q=$("x_poeFolder");q.placeholder="Paste the Google Drive folder link with all their evidence";q.autocomplete="off"};p.autocomplete="off";const m=$("x_mobile");m.type="tel";m.placeholder="+27 82 123 4567";m.onblur=()=>{m.value=normPhone(m.value)}}
 let extraLoaded=false;
 function clearExtra(){EXTRA_FIELDS.forEach(([k])=>{$("x_"+k).value=""});extraLoaded=false}
 function collectExtra(){
