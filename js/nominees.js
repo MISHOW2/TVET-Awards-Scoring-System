@@ -12,7 +12,11 @@ function nomsPage() {
       (!np || !n.poe) &&
       (n.name + ' ' + n.college + ' ' + n.id + ' ' + (CATS[n.cat] || '')).toLowerCase().includes(q),
   );
-  const groups = byCat(rows),
+  const pgd = pageOf(
+      byCat(rows).flatMap(g => g.items),
+      'admin',
+    ),
+    groups = byCat(pgd.items),
     noPoe = S.d.nominees.filter(n => !n.poe).length;
   const field = ([k, l]) =>
     LONGF.has(k)
@@ -34,8 +38,8 @@ function nomsPage() {
   <p class="err" id="err"></p><div class="row"><button class="btn gold" id="addn">Save nominee</button><button class="btn" id="cn">Cancel</button></div></section>
   <section class="card" style="margin:0"><div class="row between"><h2 style="margin:0">Nominee register</h2><div class="row"><input id="nq" placeholder="Search name, college or ID" value="${esc(S.nq || '')}" style="width:220px"><select id="ncf" style="width:auto"><option value="">All categories</option>${CATS.map((x, i) => `<option value="${i}" ${String(i) === c ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></div></div>
   <label class="row" style="font-weight:400;margin:10px 0 0"><input type="checkbox" id="nnp" style="width:auto" ${np ? 'checked' : ''}> Only nominees without a PoE</label>
-  <p class="sub" style="margin:10px 0 0">Showing ${rows.length} of ${N} nominees.</p>
-  <div class="tw" style="margin-top:10px"><table><tr><th>ID</th><th>Nominee</th><th>College</th><th>PoE</th><th>Judges scored</th><th>Actions</th></tr>${groups.map(g => `<tr class="grouprow"><td colspan="6">${esc(g.name)} &middot; ${g.all.length} nominee${g.all.length === 1 ? '' : 's'} &middot; ${g.all.filter(n => n.poe).length} with a PoE</td></tr>` + g.items.map(n => `<tr><td>${esc(n.id)}</td><td>${esc(n.name)}</td><td>${esc(n.college)}</td><td>${poeTag(n)}</td><td>${S.d.scores.filter(s => s.id === n.id).length} of ${S.d.settings.judges}</td><td><button class="lnk" data-view="${esc(n.id)}">Details</button> &nbsp; <button class="lnk" data-poe="${esc(n.id)}">${n.poe ? 'Change PoE' : 'Attach PoE'}</button> &nbsp; <button class="lnk" data-edit="${esc(n.id)}">Edit</button> &nbsp; <button class="lnk" style="color:inherit" data-del="${esc(n.id)}">Delete</button></td></tr>`).join('')).join('') || '<tr><td colspan="6">No nominees match. Clear the search or add a nominee.</td></tr>'}</table></div>
+  <p class="sub" id="top-admin" style="margin:10px 0 0">Showing ${rows.length} of ${N} nominees.</p>
+  <div class="tw" style="margin-top:10px"><table><tr><th>ID</th><th>Nominee</th><th>College</th><th>PoE</th><th>Judges scored</th><th>Actions</th></tr>${groups.map(g => `<tr class="grouprow"><td colspan="6">${esc(g.name)} &middot; ${g.all.length} nominee${g.all.length === 1 ? '' : 's'} &middot; ${g.all.filter(n => n.poe).length} with a PoE</td></tr>` + g.items.map(n => `<tr><td>${esc(n.id)}</td><td>${esc(n.name)}</td><td>${esc(n.college)}</td><td>${poeTag(n)}</td><td>${S.d.scores.filter(s => s.id === n.id).length} of ${S.d.settings.judges}</td><td><button class="lnk" data-view="${esc(n.id)}">Details</button> &nbsp; <button class="lnk" data-poe="${esc(n.id)}">${n.poe ? 'Change PoE' : 'Attach PoE'}</button> &nbsp; <button class="lnk" data-edit="${esc(n.id)}">Edit</button> &nbsp; <button class="lnk" style="color:inherit" data-del="${esc(n.id)}">Delete</button></td></tr>`).join('')).join('') || '<tr><td colspan="6">No nominees match. Clear the search or add a nominee.</td></tr>'}</table></div>${pager(pgd)}
   ${S.view ? `<div class="card" style="margin:16px 0 0"><div class="row between"><h2 style="margin:0">${esc((S.d.nominees.find(n => n.id === S.view) || {}).name || S.view)}</h2><button class="lnk" id="vclose">Close</button></div><div class="dp" data-id="${esc(S.view)}"><p class="sub">Loading...</p></div></div>` : ''}</section></div>
   <section class="card"><div class="grid g2"><div><h2>Import the whole list</h2><p class="sub">Upload a CSV file with one nominee per row. The first row must have these headings:</p><div class="row" style="margin-bottom:10px">${['Nomination ID', 'Nominee name', 'College', 'Award category'].map(h => `<span class="tag">${h}</span>`).join('')}</div><p class="sub" style="font-size:14px">Optional columns: any nomination detail heading (for example Motivation summary), plus <b>PoE link (Google Drive or SharePoint)</b> and <b>PoE folder link (Google Drive folder)</b>. Nothing already on the register is overwritten, and every skipped row is listed with the reason. In Excel, use Save As › CSV.</p><button class="lnk" id="tpl">Download a blank template</button><div id="imp"></div></div>
   <div class="dz" id="dz"><b>Drop your CSV file here</b><span>or</span><button class="btn" id="bf">Browse files</button><input type="file" id="fi" accept=".csv,text/csv" hidden></div></div></section>`;
@@ -52,15 +56,18 @@ function bindNoms() {
   };
   $('#nq').oninput = e => {
     S.nq = e.target.value;
+    S.pg.admin = 0;
     render();
     keep('#nq');
   };
   $('#ncf').onchange = e => {
     S.nc = e.target.value;
+    S.pg.admin = 0;
     render();
   };
   $('#nnp').onchange = e => {
     S.nopoe = e.target.checked;
+    S.pg.admin = 0;
     render();
   };
   $('#cn').onclick = () => {

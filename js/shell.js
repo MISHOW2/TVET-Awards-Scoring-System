@@ -103,7 +103,11 @@ function fillPanels() {
   document.querySelectorAll('.dp').forEach(async el => {
     try {
       const f = await detail(el.dataset.id);
-      if (el.isConnected) el.innerHTML = poeBlock(f) + '<div style="margin-top:16px"></div>' + detailCards(f);
+      if (el.isConnected)
+        el.innerHTML =
+          poeBlock(f) +
+          '<div style="margin-top:16px"></div>' +
+          detailCards(f, (S.d.nominees.find(n => n.id === el.dataset.id) || {}).name);
     } catch (e) {
       if (el.isConnected) el.innerHTML = '<p class="err">Could not load: ' + esc(e.message) + '</p>';
     }

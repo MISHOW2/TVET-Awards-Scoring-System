@@ -33,7 +33,11 @@ function listPage() {
       (!np || !n.poe) &&
       (n.name + ' ' + n.college + ' ' + n.id + ' ' + (CATS[n.cat] || '')).toLowerCase().includes(q),
   );
-  const groups = byCat(rows);
+  const pgd = pageOf(
+      byCat(rows).flatMap(g => g.items),
+      'judge',
+    ),
+    groups = byCat(pgd.items);
   return `<div class="row between"><div><h1>Nominees</h1><p class="sub">Open a nominee to read the nomination and evidence, then score them. You see only your own scores.</p></div><span class="chip">${closed ? 'Scoring is closed' : 'Scoring is open'}</span></div>
   <div class="card" style="margin:0 0 16px"><div class="row between"><b>Your progress</b><span class="sub">${done} scored${gone ? `, ${gone} recused` : ''}, of ${N} nominees</span></div><div class="bar-track"><div class="bar-fill" style="width:${N ? ((done + gone) / N) * 100 : 0}%"></div></div></div>
   ${catTable([
@@ -44,7 +48,7 @@ function listPage() {
   <div class="card grid g3" style="align-items:end"><div><label for="cat" style="margin:0 0 4px">Category</label><select id="cat"><option value="">All categories</option>${CATS.map((x, i) => `<option value="${i}" ${String(i) === c ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></div>
   <div><label for="q" style="margin:0 0 4px">Search</label><input id="q" placeholder="Name, college or ID" value="${esc(S.q || '')}"></div>
   <label class="row" style="font-weight:400;margin:0"><input type="checkbox" id="np" style="width:auto" ${np ? 'checked' : ''}> Only nominees without a PoE</label></div>
-  <p class="sub" style="margin:0 0 8px">Showing ${rows.length} of ${N} nominees.</p>
+  <p class="sub" id="top-judge" style="margin:0 0 8px">Showing ${rows.length} of ${N} nominees.</p>
   <div class="card tw"><table><tr><th>ID</th><th>Nominee</th><th>College</th><th>PoE</th><th>Your status</th><th>Action</th></tr>${
     groups
       .map(
@@ -59,7 +63,7 @@ function listPage() {
             .join(''),
       )
       .join('') || '<tr><td colspan="6">No nominees match. Clear the search or choose another category.</td></tr>'
-  }</table></div>`;
+  }</table></div>${pager(pgd)}`;
 }
 
 function bindList() {
@@ -77,14 +81,17 @@ function bindList() {
   );
   $('#cat').onchange = e => {
     S.cat = e.target.value;
+    S.pg.judge = 0;
     render();
   };
   $('#np').onchange = e => {
     S.nopoe = e.target.checked;
+    S.pg.judge = 0;
     render();
   };
   $('#q').oninput = e => {
     S.q = e.target.value;
+    S.pg.judge = 0;
     render();
     $('#q').focus();
     $('#q').setSelectionRange(99, 99);
@@ -136,7 +143,7 @@ function bindScore() {
     .then(f => {
       if (S.nom !== id || !$('#poe')) return;
       $('#poe').innerHTML = poeBlock(f);
-      $('#dets').innerHTML = detailCards(f);
+      $('#dets').innerHTML = detailCards(f, (S.d.nominees.find(n => n.id === id) || {}).name);
     })
     .catch(e => {
       if ($('#poe')) $('#poe').innerHTML = '<p class="err">Could not load the details: ' + esc(e.message) + '</p>';

@@ -25,3 +25,75 @@ function catTable(cols) {
 
 // The auditor is read-only.
 const ro = () => S.role === 'auditor';
+
+// ---- paging: long lists show a few rows at a time, with Previous / page numbers / Next ----
+const PAGE_SIZES = [5, 10, 25, 50];
+
+// The slice of `list` for the current page of list `key`. The page is kept within range.
+function pageOf(list, key) {
+  const per = S.ps || 5,
+    pages = Math.max(1, Math.ceil(list.length / per)),
+    pg = Math.min(S.pg[key] || 0, pages - 1);
+  S.pg[key] = pg;
+  return {
+    key,
+    pg,
+    pages,
+    per,
+    total: list.length,
+    items: list.slice(pg * per, pg * per + per),
+    from: list.length ? pg * per + 1 : 0,
+    to: Math.min(list.length, pg * per + per),
+  };
+}
+
+// Page numbers to show: all of them when few, otherwise first, last and the ones around the current page ('…' between).
+function pageNumbers(pg, pages) {
+  if (pages <= 7) return [...Array(pages).keys()];
+  const want = new Set([0, pages - 1, pg - 1, pg, pg + 1].filter(n => n >= 0 && n < pages)),
+    out = [];
+  [...want]
+    .sort((a, b) => a - b)
+    .forEach((n, i, a) => {
+      if (i && n - a[i - 1] > 1) out.push('…');
+      out.push(n);
+    });
+  return out;
+}
+
+// The pager under a list. Buttons carry data-pg="key:page"; the page-size drop-down carries data-ps.
+function pager(p) {
+  if (!p.total) return '';
+  const go = (n, label, extra = '') => `<button class="btn pgbtn" data-pg="${p.key}:${n}" ${extra}>${label}</button>`;
+  const nums = pageNumbers(p.pg, p.pages)
+    .map(n =>
+      n === '…'
+        ? '<span class="sub">…</span>'
+        : go(
+            n,
+            n + 1,
+            n === p.pg
+              ? 'aria-current="page" aria-label="Page ' + (n + 1) + ', current page"'
+              : 'aria-label="Page ' + (n + 1) + '"',
+          ),
+    )
+    .join('');
+  return `<div class="pager row between"><span class="sub">Showing ${p.from} to ${p.to} of ${p.total} &middot; page ${p.pg + 1} of ${p.pages}</span>
+  <div class="row"><label class="row sub" style="margin:0;font-weight:400">Per page <select data-ps style="width:auto">${PAGE_SIZES.map(n => `<option ${n === p.per ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+  ${go(p.pg - 1, 'Previous', p.pg < 1 ? 'disabled' : '')}${nums}${go(p.pg + 1, 'Next', p.pg >= p.pages - 1 ? 'disabled' : '')}</div></div>`;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('[data-pg]');
+  if (!b || b.disabled) return;
+  const [key, n] = b.dataset.pg.split(':');
+  S.pg[key] = +n;
+  render();
+  const top = document.getElementById('top-' + key);
+  if (top) top.scrollIntoView({ block: 'start' });
+});
+document.addEventListener('change', e => {
+  if (!e.target.matches || !e.target.matches('[data-ps]')) return;
+  S.ps = +e.target.value || 5;
+  S.pg = {};
+  render();
+});

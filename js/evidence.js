@@ -28,14 +28,58 @@ function poeBlock(f) {
 }
 
 // The nomination details as grouped cards.
-function detailCards(f) {
+// Long texts (motivation, evidence ...) show a short preview with "View more", which opens the whole text in a pop-up.
+const PREVIEW_CHARS = 320;
+const MORE_TEXTS = []; // the full texts behind the "View more" buttons, filled each time the cards are drawn
+
+function longText(label, text, who) {
+  const full = String(text);
+  if (full.length <= PREVIEW_CHARS)
+    return `<div class="def"><span class="eyebrow">${esc(label)}</span><div style="white-space:pre-wrap">${esc(full)}</div></div>`;
+  const cut = full
+    .slice(0, PREVIEW_CHARS)
+    .replace(/\s+\S*$/, '')
+    .trimEnd();
+  MORE_TEXTS.push({ label, who, text: full });
+  return `<div class="def"><span class="eyebrow">${esc(label)}</span><div style="white-space:pre-wrap">${esc(cut)}…</div><button class="lnk" data-more="${MORE_TEXTS.length - 1}">View more</button></div>`;
+}
+
+// The pop-up: one <dialog> shared by every "View more" button. Esc, the Close button or a click outside closes it.
+function showMore(i) {
+  const m = MORE_TEXTS[i];
+  if (!m) return;
+  let d = $('#moreDlg');
+  if (!d) {
+    d = document.createElement('dialog');
+    d.id = 'moreDlg';
+    d.setAttribute('aria-labelledby', 'moreTitle');
+    d.innerHTML =
+      '<div class="mhead"><div><small class="sub" id="moreWho"></small><h2 id="moreTitle"></h2></div><button class="btn" id="moreClose">Close</button></div><div class="mbody" id="moreText"></div>';
+    document.body.append(d);
+    $('#moreClose').onclick = () => d.close();
+    d.addEventListener('click', e => {
+      if (e.target === d) d.close();
+    });
+  }
+  $('#moreWho').textContent = m.who || '';
+  $('#moreTitle').textContent = m.label;
+  $('#moreText').textContent = m.text;
+  $('#moreText').scrollTop = 0;
+  d.showModal();
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('[data-more]');
+  if (b) showMore(+b.dataset.more);
+});
+
+function detailCards(f, who) {
   return (
     GROUPS.map(([t, keys]) => {
       const have = keys.filter(k => String(f[k] || '').trim());
       if (!have.length) return '';
       const sh = have.filter(k => !LONGF.has(k)),
         lg = have.filter(k => LONGF.has(k));
-      return `<div class="box"><b>${t}</b>${sh.length ? '<div class="dgrid">' + sh.map(k => `<div><span class="eyebrow">${esc(LAB[k])}</span>${esc(f[k])}</div>`).join('') + '</div>' : ''}${lg.map(k => `<div class="def"><span class="eyebrow">${esc(LAB[k])}</span><div style="white-space:pre-wrap">${esc(f[k])}</div></div>`).join('')}</div>`;
+      return `<div class="box"><b>${t}</b>${sh.length ? '<div class="dgrid">' + sh.map(k => `<div><span class="eyebrow">${esc(LAB[k])}</span>${esc(f[k])}</div>`).join('') + '</div>' : ''}${lg.map(k => longText(LAB[k], f[k], who)).join('')}</div>`;
     }).join('') ||
     '<p class="sub">No nomination details have been loaded for this nominee yet. Ask the organisers before scoring.</p>'
   );

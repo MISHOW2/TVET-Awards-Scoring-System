@@ -9,7 +9,8 @@ function resultsSummary() {
     ct = S.rc || '',
     fl = S.rfl;
   const rows = R.filter(r => (ct === '' || String(r.n.cat) === ct) && (!st || r.rec === st) && (!fl || r.flag));
-  const names = ['T', 'S', 'I', 'D', 'P', 'F'];
+  const pgd = pageOf(rows, 'results'),
+    names = ['T', 'S', 'I', 'D', 'P', 'F'];
   return `<div class="row between"><div><h1>Results</h1><p class="sub">Every nominee’s scores, each judge’s reasons, and the flags.${ro() ? ' You have read-only access.' : ''}</p></div>${ro() ? '' : '<div><small class="sub">ADMINISTRATOR ONLY</small><br><button class="btn dark" id="exp">Export results (CSV)</button></div>'}</div>
   <div style="margin-bottom: 16px">${catTable([['Fully scored', ns => ns.filter(n => !result(n).wait).length + ' of ' + ns.length]])}</div>
   <div class="grid g5">${[
@@ -26,7 +27,7 @@ function resultsSummary() {
       '',
     )}<div class="card stat" style="margin:0"><small>Fewer than ${S.d.settings.judges} judges</small><strong>Awaiting judges</strong><b>${wait}</b></div></div>
   <section class="card"><div class="row"><div><label for="rc" style="margin-top:0">Category</label><select id="rc"><option value="">All categories</option>${CATS.map((x, i) => `<option value="${i}" ${String(i) === ct ? 'selected' : ''}>${x}</option>`).join('')}</select></div><div><label for="rf" style="margin-top:0">Recognition</label><select id="rf"><option value="">All</option>${OUTCOMES.map(o => `<option ${o === st ? 'selected' : ''}>${o}</option>`).join('')}</select></div><label class="row" style="font-weight:400;margin-top:24px"><input type="checkbox" id="rfl" style="width:auto" ${fl ? 'checked' : ''}> Show flagged nominees only</label></div>
-  <div class="tw" style="margin-top:14px"><table><tr><th>Rank</th><th>Nominee</th><th>Category</th><th>Judges</th><th>Judge totals</th><th>Average</th><th>Recognition</th><th>Flag</th></tr>${rows.map((r, i) => `<tr ${S.rn === r.n.id ? 'style="background:var(--soft)"' : ''} data-n="${esc(r.n.id)}" tabindex="0"><td><b>${r.wait ? '–' : i + 1}</b></td><td>${esc(r.n.name)}</td><td>${esc(CATS[r.n.cat] || '')}</td><td>${r.sc.length} of ${S.d.settings.judges}</td><td>${r.sc.map(s => `<span class="tag">${Math.round(s.total)}</span>`).join(' ')}</td><td><b>${r.wait ? '–' : r.avg.toFixed(1)}</b></td><td>${r.wait ? 'Awaiting judges' : r.rec}</td><td>${r.flag ? '<span class="tag">Spread flag</span>' : ''}</td></tr>`).join('') || '<tr><td colspan="8">No nominees match these filters.</td></tr>'}</table></div>
+  <div class="tw" id="top-results" style="margin-top:14px"><table><tr><th>Rank</th><th>Nominee</th><th>Category</th><th>Judges</th><th>Judge totals</th><th>Average</th><th>Recognition</th><th>Flag</th></tr>${pgd.items.map((r, i) => `<tr ${S.rn === r.n.id ? 'style="background:var(--soft)"' : ''} data-n="${esc(r.n.id)}" tabindex="0"><td><b>${r.wait ? '–' : pgd.from + i}</b></td><td>${esc(r.n.name)}</td><td>${esc(CATS[r.n.cat] || '')}</td><td>${r.sc.length} of ${S.d.settings.judges}</td><td>${r.sc.map(s => `<span class="tag">${Math.round(s.total)}</span>`).join(' ')}</td><td><b>${r.wait ? '–' : r.avg.toFixed(1)}</b></td><td>${r.wait ? 'Awaiting judges' : r.rec}</td><td>${r.flag ? '<span class="tag">Spread flag</span>' : ''}</td></tr>`).join('') || '<tr><td colspan="8">No nominees match these filters.</td></tr>'}</table></div>${pager(pgd)}
   <p class="sub" style="font-size:14px;margin-top:10px"><b>Awaiting judges</b> means fewer than the required judges have scored that nominee. <b>Spread flag</b> means judges’ totals differ by more than ${S.d.settings.spread} points, so the panel should discuss and moderate.</p></section>
   ${
     S.rn
@@ -82,14 +83,17 @@ function resultsPage() {
 function bindResults() {
   $('#rc').onchange = e => {
     S.rc = e.target.value;
+    S.pg.results = 0;
     render();
   };
   $('#rf').onchange = e => {
     S.rf = e.target.value;
+    S.pg.results = 0;
     render();
   };
   $('#rfl').onchange = e => {
     S.rfl = e.target.checked;
+    S.pg.results = 0;
     render();
   };
   document.querySelectorAll('[data-n]').forEach(r => {
