@@ -30,10 +30,10 @@ function nomsPage() {
       ns => ns.filter(n => S.d.scores.filter(s => s.id === n.id).length >= Math.max(1, +S.d.settings.judges)).length,
     ],
   ])}</div>
-  <div class="grid side"><section class="card" style="margin:0"><h2>${e.id ? 'Edit nominee' : 'Add nominee'}</h2>
-  <label for="nn">Nominee / lecturer name</label><input id="nn" value="${esc(e.name)}"><label for="nc">College / institution</label><input id="nc" value="${esc(e.college)}">
-  <label for="nk">Award category</label><select id="nk"><option value="">Select a category</option>${CATS.map((x, i) => `<option value="${i}" ${e.id && e.cat === i ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select>
-  <label for="ni">Nomination ID</label><input id="ni" value="${esc(e.id)}" ${e.id ? 'readonly' : ''}>
+  <div class="stack"><section class="card" style="margin:0"><h2>${e.id ? 'Edit nominee' : 'Add nominee'}</h2>
+  <div class="fgrid"><div><label for="nn">Nominee / lecturer name</label><input id="nn" value="${esc(e.name)}"></div><div><label for="nc">College / institution</label><input id="nc" value="${esc(e.college)}"></div>
+  <div><label for="nk">Award category</label><select id="nk"><option value="">Select a category</option>${CATS.map((x, i) => `<option value="${i}" ${e.id && e.cat === i ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></div>
+  <div><label for="ni">Nomination ID</label><input id="ni" value="${esc(e.id)}" ${e.id ? 'readonly' : ''}></div></div>
   <details id="xd" class="note" style="margin-top:14px" ${e.id ? 'open' : ''}><summary><b>Nomination details and PoE links</b></summary><p class="sub" style="font-size:14px">Judges read these when they score. Contact details and who nominated are kept from judges. ${e.id ? 'Existing values are loaded below.' : ''}</p><div class="xgrid">${EXTRA_F.map(field).join('')}</div></details>
   <p class="err" id="err"></p><div class="row"><button class="btn gold" id="addn">Save nominee</button><button class="btn" id="cn">Cancel</button></div></section>
   <section class="card" style="margin:0"><div class="row between"><h2 style="margin:0">Nominee register</h2><div class="row"><input id="nq" placeholder="Search name, college or ID" value="${esc(S.nq || '')}" style="width:220px"><select id="ncf" style="width:auto"><option value="">All categories</option>${CATS.map((x, i) => `<option value="${i}" ${String(i) === c ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></div></div>

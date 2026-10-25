@@ -831,3 +831,68 @@ dialog#moreDlg[open] {
   line-height: 1.6;
   padding-right: 6px;
 }
+
+/* ===== 8. Long names, side lists, compact pager ===== */
+.item {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.iname {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.istat {
+  font-size: 12px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  padding: 1px 9px;
+  background: #fff;
+  white-space: nowrap;
+}
+.istat.done {
+  background: #e6f4ec;
+  border-color: #198754;
+  color: #0f5132;
+}
+td,
+th {
+  overflow-wrap: break-word;
+}
+td:first-child {
+  white-space: nowrap;
+}
+td.namecell,
+.grouprow td {
+  white-space: normal;
+}
+td.namecell {
+  min-width: 180px;
+}
+.pager.compact {
+  margin-top: 10px;
+}
+.pager.compact .pgbtn {
+  padding: 6px 10px;
+}
+
+/* ===== 9. Stacked pages and form grid ===== */
+.stack {
+  display: grid;
+  gap: 16px;
+}
+.fgrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0 16px;
+}
+@media (max-width: 900px) {
+  .fgrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .fgrid {
+    grid-template-columns: 1fr;
+  }
+}

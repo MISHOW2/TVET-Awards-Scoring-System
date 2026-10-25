@@ -62,9 +62,11 @@ function pageNumbers(pg, pages) {
 }
 
 // The pager under a list. Buttons carry data-pg="key:page"; the page-size drop-down carries data-ps.
-function pager(p) {
+function pager(p, compact) {
   if (!p.total) return '';
   const go = (n, label, extra = '') => `<button class="btn pgbtn" data-pg="${p.key}:${n}" ${extra}>${label}</button>`;
+  if (compact)
+    return `<div class="pager compact"><span class="sub">${p.from} to ${p.to} of ${p.total}</span><div class="row">${go(p.pg - 1, 'Previous', p.pg < 1 ? 'disabled' : '')}<span class="sub">${p.pg + 1} / ${p.pages}</span>${go(p.pg + 1, 'Next', p.pg >= p.pages - 1 ? 'disabled' : '')}</div></div>`;
   const nums = pageNumbers(p.pg, p.pages)
     .map(n =>
       n === '…'

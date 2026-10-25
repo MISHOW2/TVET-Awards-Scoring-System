@@ -29,6 +29,7 @@ function chrome() {
   if ($('#out'))
     $('#out').onclick = () => {
       forgetSession();
+      S.helpTopic = null;
       S.role = null;
       S.cred = '';
       S.confirmed = false;

@@ -6,9 +6,14 @@ function moderationEditor() {
   if (!n) return '<h1>Moderation</h1><p class="sub">Add nominees first.</p>';
   S.mod = n.id;
   const m = S.d.moderation.find(x => x.nomineeId === n.id) || {},
-    r = result(n);
+    r = result(n),
+    q = (S.mq || '').toLowerCase(),
+    pgd = pageOf(
+      S.d.nominees.filter(x => (x.name + ' ' + x.college).toLowerCase().includes(q)),
+      'mod',
+    );
   return `<div class="row between"><h1>Moderation</h1><button class="btn" id="rep">View final moderation report</button></div><p class="sub">After judging, record strengths, evidence, achievements and the outcome for each nominee. This feeds the final report.${ro() ? ' You have read-only access.' : ''}</p>
-  <div class="grid side"><section class="card" style="margin-top:0"><h2>Nominees</h2>${S.d.nominees.map(x => `<button class="item" data-m="${esc(x.id)}" ${x.id === n.id ? 'aria-current="true"' : ''}><span>${esc(x.name)}</span><small>${S.d.moderation.some(y => y.nomineeId === x.id) ? 'Done' : 'Not started'}</small></button>`).join('')}</section>
+  <div class="grid side"><section class="card" style="margin-top:0"><h2>Nominees</h2><p class="sub" style="margin:0 0 8px">${S.d.moderation.length} of ${S.d.nominees.length} started</p><input id="mq" type="search" placeholder="Search name or college" value="${esc(S.mq || '')}" aria-label="Search nominees" style="margin-bottom:10px"><div id="top-mod">${pgd.items.map(x => `<button class="item" data-m="${esc(x.id)}" ${x.id === n.id ? 'aria-current="true"' : ''}><span class="iname">${esc(x.name)}</span><small class="istat ${S.d.moderation.some(y => y.nomineeId === x.id) ? 'done' : ''}">${S.d.moderation.some(y => y.nomineeId === x.id) ? 'Done' : 'Not started'}</small></button>`).join('') || '<p class="sub">No nominees match.</p>'}</div>${pager(pgd, true)}</section>
   <section class="card" style="margin-top:0"><div class="row between"><h2>${esc(n.name)}</h2><span class="sub">${r.wait ? 'Awaiting judges' : `Average ${r.avg.toFixed(1)} / 100 · Calculated: ${r.rec}`}</span></div>
   ${[
     ['strengths', 'Strengths'],
@@ -39,6 +44,13 @@ function modPage() {
 }
 
 function bindModEditor() {
+  $('#mq').oninput = e => {
+    S.mq = e.target.value;
+    S.pg.mod = 0;
+    render();
+    $('#mq').focus();
+    $('#mq').setSelectionRange(99, 99);
+  };
   document.querySelectorAll('[data-m]').forEach(
     b =>
       (b.onclick = () => {
