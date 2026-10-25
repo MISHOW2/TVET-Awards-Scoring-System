@@ -9,6 +9,8 @@ const detail = async id => {
   return (S.dc[k] = r.fields || {});
 };
 
+
+
 // The PoE links: the PDF document, and the Drive folder with everything else the nominee submitted.
 function poeBlock(f) {
   const id = String(f.poe || '').trim(),
@@ -23,7 +25,7 @@ function poeBlock(f) {
   if (!h) return '<p class="sub">No PoE has been linked to this nominee yet</p>';
   return (
     h +
-    
+
     '<p class="sub" style="font-size:14px;margin:12px 0 0">If Google or SharePoint asks you to sign in or says you need access, ask the organisers to share it with you.</p>'
   );
 }
