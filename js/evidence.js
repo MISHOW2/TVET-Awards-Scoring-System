@@ -9,8 +9,6 @@ const detail = async id => {
   return (S.dc[k] = r.fields || {});
 };
 
-
-
 // The PoE links: the PDF document, and the Drive folder with everything else the nominee submitted.
 function poeBlock(f) {
   const id = String(f.poe || '').trim(),
@@ -22,10 +20,9 @@ function poeBlock(f) {
     h += `<p class="sub" style="margin:0 0 6px"><b>The PoE document (SharePoint / OneDrive)</b></p><a class="btn dark" target="_blank" rel="noopener noreferrer" href="${esc(id)}">Open the PoE (new tab)</a>`;
   if (FOLD.test(fo))
     h += `<p class="sub" style="margin:${h ? '16px' : '0'} 0 6px"><b>All the evidence for this nominee</b> (videos, certificates, letters, supporting documents)</p><a class="btn gold" target="_blank" rel="noopener noreferrer" href="${esc(fo)}">Open the PoE folder (new tab)</a>`;
-  if (!h) return '<p class="sub">No PoE has been linked to this nominee yet</p>';
+  if (!h) return '<p class="sub">No PoE has been linked to this nominee yet. Ask the organisers before scoring.</p>';
   return (
     h +
-
     '<p class="sub" style="font-size:14px;margin:12px 0 0">If Google or SharePoint asks you to sign in or says you need access, ask the organisers to share it with you.</p>'
   );
 }
@@ -84,6 +81,6 @@ function detailCards(f, who) {
         lg = have.filter(k => LONGF.has(k));
       return `<div class="box"><b>${t}</b>${sh.length ? '<div class="dgrid">' + sh.map(k => `<div><span class="eyebrow">${esc(LAB[k])}</span>${esc(f[k])}</div>`).join('') + '</div>' : ''}${lg.map(k => longText(LAB[k], f[k], who)).join('')}</div>`;
     }).join('') ||
-    '<p class="sub">No nomination details have been loaded for this nominee yet.</p>'
+    '<p class="sub">No nomination details have been loaded for this nominee yet. Ask the organisers before scoring.</p>'
   );
 }
