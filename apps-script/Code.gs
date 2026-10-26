@@ -834,6 +834,7 @@ function doPost(e) {
           'National Excellence Winner',
           'Finalist Recognition',
           'Merit Recognition',
+          'Does Not Qualify',
           'Does not qualify',
           '',
         ];

@@ -39,25 +39,215 @@ const SCALE = [
   ['5 – Outstanding', 'Exceptional evidence of innovation, sustainability and sector-wide impact.'],
 ];
 
-// The one-line guidance printed under each criterion, in the same order as CRIT.
-const GUIDE = [
-  'Quality of lesson delivery, learner engagement and assessment practice.',
-  'Pass rates, throughput and improvement in learner results.',
-  'Links with employers, workplace placements and relevance to industry needs.',
-  'Use of digital tools and new methods that improve learning.',
-  'Qualifications, training and ongoing growth as a lecturer.',
-  'Learner surveys and testimonials about the nominee’s teaching.',
+// The handbook's guidance for each criterion, in the same order as CRIT (Adjudicator Guide v1.1, section 8):
+// focus, what to consider, guiding questions, and what each rating from 1 to 5 means.
+const RUBRIC = [
+  {
+    focus: 'Quality of teaching practice, learner engagement and instructional excellence.',
+    consider: [
+      'Teaching methodologies',
+      'Learner engagement techniques',
+      'Classroom practice',
+      'Peer evaluations',
+      'Teaching-related achievements',
+      'Alignment between teaching practice and learner outcomes',
+    ],
+    ask: [
+      'How effectively are learners engaged?',
+      'What evidence demonstrates instructional excellence?',
+      'Is there evidence of measurable learner improvement?',
+      'Can the practice be replicated elsewhere?',
+    ],
+    levels: [
+      'Little evidence of effective teaching practice.',
+      'Some effective practices evident but significant gaps remain.',
+      'Good evidence of quality teaching and learner engagement.',
+      'Strong evidence of excellence and measurable impact.',
+      'Exceptional teaching practice demonstrating sustained excellence, innovation and sector impact.',
+    ],
+  },
+  {
+    focus: 'Learner achievement, completion and success rates.',
+    consider: [
+      'Pass rates',
+      'Completion rates',
+      'Certification rates',
+      'Retention rates',
+      'Progression data',
+      'Trade test results',
+      'Longitudinal trends',
+    ],
+    ask: [
+      'What learner outcomes are demonstrated?',
+      'How significant are the achievements?',
+      'Are improvements sustained?',
+    ],
+    levels: [
+      'Minimal evidence of learner success.',
+      'Limited evidence of learner performance improvement.',
+      'Good and verifiable learner outcomes demonstrated.',
+      'Strong and consistent positive learner outcomes.',
+      'Outstanding learner performance supported by compelling data and measurable impact.',
+    ],
+  },
+  {
+    focus: 'Employer engagement and workplace relevance.',
+    consider: [
+      'Employer partnerships',
+      'Workplace placements',
+      'Apprenticeships',
+      'Internships',
+      'Graduate employment outcomes',
+      'Employer testimonials',
+    ],
+    ask: [
+      'How strong are industry partnerships?',
+      'How have learners benefited?',
+      'Is there evidence of employability outcomes?',
+    ],
+    levels: [
+      'Little or no evidence of industry engagement.',
+      'Limited partnerships and workplace relevance.',
+      'Adequate industry engagement and learner benefit.',
+      'Strong partnerships with measurable outcomes.',
+      'Exceptional industry engagement resulting in significant employability impact.',
+    ],
+  },
+  {
+    focus: 'Innovative approaches and technology integration.',
+    consider: [
+      'Innovative teaching methods',
+      'Digital tools',
+      'Technology-enabled learning',
+      'Learner support interventions',
+      'Measurable outcomes',
+    ],
+    ask: ['What innovation was introduced?', 'What challenge did it address?', 'What evidence demonstrates impact?'],
+    levels: [
+      'No evidence of innovation.',
+      'Innovation is limited with weak evidence of impact.',
+      'Innovation has been implemented successfully.',
+      'Strong innovation with measurable outcomes.',
+      'Outstanding innovation demonstrating transformative impact.',
+    ],
+  },
+  {
+    focus: 'Continuous learning and contribution to the TVET sector.',
+    consider: [
+      'Training attended',
+      'Qualifications obtained',
+      'Sector participation',
+      'Institutional contributions',
+      'Application of learning',
+    ],
+    ask: [
+      'Is there commitment to continuous learning?',
+      'Has learning improved practice?',
+      'Has the nominee contributed to the sector?',
+    ],
+    levels: [
+      'Minimal professional development evidence.',
+      'Some development activity with limited impact.',
+      'Consistent professional growth evident.',
+      'Strong commitment to development and contribution.',
+      'Exceptional professional growth and sector contribution.',
+    ],
+  },
+  {
+    focus: 'Learner satisfaction and teaching effectiveness ratings.',
+    consider: [
+      'Student surveys',
+      'Graduate feedback',
+      'Testimonials',
+      'Satisfaction ratings',
+      'Quality of learner comments',
+    ],
+    ask: [
+      'How do learners perceive the nominee?',
+      'Is feedback consistent?',
+      'Does feedback support claims of excellence?',
+    ],
+    levels: [
+      'Negative, absent or insufficient feedback.',
+      'Mixed learner feedback.',
+      'Positive learner feedback supporting effectiveness.',
+      'Strong learner satisfaction demonstrated.',
+      'Exceptional and consistently positive learner feedback.',
+    ],
+  },
+];
+
+// The one-line focus shown under each criterion name.
+const GUIDE = RUBRIC.map(r => r.focus);
+
+// Cross-cutting judging indicators (handbook section 9): they inform the score on every criterion.
+const INDICATORS = [
+  ['Impact', 'What measurable difference was achieved?'],
+  ['Innovation', 'What new or improved approach was introduced?'],
+  ['Industry Relevance', 'How well does the work respond to labour market needs?'],
+  ['Learner Success', 'What evidence demonstrates improved learner outcomes?'],
+  ['Sustainability', 'Can the initiative continue over time?'],
+  ['Transferability', 'Can the practice be replicated elsewhere?'],
+];
+
+// Evidence review guidance (handbook section 6): what to review and where to verify it.
+const EVIDENCE_GUIDE = [
+  [
+    'Student performance data',
+    [
+      'Pass rates',
+      'Completion rates',
+      'Certification rates',
+      'Retention rates',
+      'Progression rates',
+      'Trade test performance',
+      'Three-year performance trends',
+    ],
+    ['Examination reports', 'Academic records', 'MIS reports', 'Quality assurance reports'],
+  ],
+  [
+    'Industry partnership evidence',
+    [
+      'Workplace placements',
+      'Apprenticeships',
+      'Learnerships',
+      'Internship records',
+      'Memoranda of Understanding',
+      'Employer testimonials',
+      'Employment outcomes',
+    ],
+    ['Signed agreements', 'Placement records', 'Employer confirmations'],
+  ],
+  [
+    'Peer reviews',
+    ['Classroom observations', 'Moderation reports', 'Academic evaluations', 'Subject specialist reviews'],
+    ['HoD reports', 'Senior lecturer assessments', 'Academic manager reports'],
+  ],
+  [
+    'Student feedback',
+    ['Student surveys', 'Graduate surveys', 'Learner feedback reports', 'Focus group findings', 'Testimonials'],
+    [],
+  ],
+  [
+    'Institutional endorsement',
+    ['Principal support letter', 'HoD recommendation', 'Institutional confirmation of achievements'],
+    [],
+  ],
 ];
 
 // Printed under the 1 to 5 buttons on small screens.
 const ENDS = '<div class="endpts"><span>1 Poor</span><span>5 Outstanding</span></div>';
 
 // Recognition bands: calculated from the average of the judges' totals (see recog in scoring.js).
-const OUTCOMES = ['National Excellence Winner', 'Finalist Recognition', 'Merit Recognition', 'Does not qualify'];
+const OUTCOMES = ['National Excellence Winner', 'Finalist Recognition', 'Merit Recognition', 'Does Not Qualify'];
 
 // Confidentiality declaration shown to a judge on first sign-in.
 const DECL_TEXT =
-  'I will keep all nominee information, scores and panel discussions confidential. I will not share my personal code, and I will use the nominee details only for judging.';
+  'I acknowledge that all nomination materials, presentations, scores, comments and deliberations are confidential and may not be disclosed outside the official adjudication process. I will not share my personal code.';
+
+// The impartiality sign-off a judge ticks for each nominee (handbook section 15).
+const SIGNOFF_TEXT =
+  'I confirm that I have assessed this nomination impartially and solely on the basis of the submitted and verified evidence, in accordance with the National TVET Excellence Awards Framework and Adjudicator Handbook.';
 
 // Every nomination detail the sheet stores, as [field, label]. Same order as the EXTRA list in Code.gs.
 const EXTRA_F = [

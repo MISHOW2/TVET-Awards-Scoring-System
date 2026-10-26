@@ -23,9 +23,9 @@ const HELP_TOPICS = [
           '<b>Scoring a nominee</b>' +
           helpSteps([
             'Pick a nominee from the list. Read the nomination details and open the PoE: the PDF opens in a new tab, and “Open the PoE folder” shows everything else they submitted.',
-            'Declare whether you have a conflict of interest. If you do, choose the recusal option and do not score the nominee. Otherwise give each of the six criteria a whole number from 1 to 5; the guidance for each is shown beside it.',
-            'Write your reasons for the scores in the one box, with reference to the evidence.',
-            'Tick the sign-off: you assessed the nomination impartially, with no conflict of interest, on the submitted and verified evidence.',
+            'Declare whether you have a conflict of interest. If you do, choose the recusal option and do not score the nominee. Otherwise give each of the six criteria a whole number from 1 to 5; press “Show the rubric” under a criterion to see what to consider, the guiding questions and what each rating means.',
+            'Write the strengths you found and the evidence supporting your scores in the one box.',
+            'Tick the sign-off: you assessed the nomination impartially and solely on the basis of the submitted and verified evidence, in accordance with the Awards Framework and Adjudicator Handbook.',
             'Press Save. A confirmation appears when it is stored.',
           ]) +
           '<div class="note"><b>Tip:</b> Judge on evidence only. If you know a nominee personally or have a conflict of interest, do not score them. Tell the administrator.</div>',
@@ -116,6 +116,21 @@ const HELP_TOPICS = [
           .join('') +
           '<p style="margin-top:10px"><b>Awaiting judges</b> means fewer judges than the number set in Settings have scored that nominee (a judge who recuses lowers the number needed), so no final result is shown yet.</p>' +
           '<p><b>Spread flag:</b> if judges’ totals differ by more than the set limit (default 15 points), the nominee is flagged for the panel to discuss and moderate.</p>',
+      ),
+  ],
+  [
+    'evidence',
+    'Reviewing evidence',
+    () =>
+      helpCard(
+        'Reviewing the evidence',
+        '<p class="sub">Review all submitted evidence before you assign scores. For each type of evidence, check what is listed and, where a source is named, verify it there.</p>' +
+          EVIDENCE_GUIDE.map(
+            e =>
+              `<div class="def"><b>${e[0]}</b><br><span class="sub">Review:</span> ${e[1].join(', ')}.${e[2].length ? `<br><span class="sub">Verify against:</span> ${e[2].join(', ')}.` : ''}</div>`,
+          ).join('') +
+          '<h2 style="margin-top:18px">Cross-cutting indicators</h2><p class="sub">These inform the score on all six criteria.</p>' +
+          INDICATORS.map(r => `<div class="def"><b>${r[0]}</b> ${r[1]}</div>`).join(''),
       ),
   ],
   [

@@ -896,3 +896,24 @@ td.namecell {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== 10. Rubric panels ===== */
+details.rubric > summary {
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--blue, #0f5a9c);
+  margin-top: 8px;
+}
+details.rubric ul {
+  margin: 4px 0 8px 18px;
+  padding: 0;
+  font-size: 14px;
+}
+details.rubric .eyebrow {
+  margin: 10px 0 2px;
+}
+details.rubric table.scale td {
+  padding: 4px 8px 4px 0;
+  font-size: 14px;
+  vertical-align: top;
+}

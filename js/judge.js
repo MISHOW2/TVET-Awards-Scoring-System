@@ -123,11 +123,11 @@ function scorePage() {
   return (
     left +
     `<section class="card" style="margin-top:0"><label for="coi" style="margin-top:0">Conflict of interest</label><select id="coi"><option value="">-- Declare --</option><option value="none">I have NO conflict of interest with this nominee</option><option value="conflict">I HAVE a conflict of interest, so I recuse myself</option></select>
-  <div id="sbody" ${S.sel.coi === 'none' ? '' : 'hidden'}><div class="row between" style="margin-top:18px"><h2>Your scores</h2><span class="sub" style="font-size:14px">Whole number from 1 to 5 for each criterion</span></div>
-  ${CRIT.map((c, i) => `<div class="crit"><div class="head"><span>${c[0]}</span><span class="tag">Weight ${c[1]}</span></div><div class="eyebrow" style="margin:8px 0 2px">Guidance</div><p class="sub" style="font-size:14px;margin:0">${GUIDE[i]}</p><div class="pick" role="group" aria-label="${c[0]}">${[1, 2, 3, 4, 5].map(k => `<button data-i="${i}" data-k="${k}" aria-pressed="${v[i] === k}">${k}</button>`).join('')}<span class="sub pts" id="pt${i}">${((v[i] / 5) * c[1]).toFixed(0)} / ${c[1]} points</span></div>${ENDS}</div>`).join('')}
-  <label for="why">Your reasons for the scores</label><p class="sub" style="font-size:14px;margin:0 0 6px">One box for all six criteria. Refer to the evidence.</p><textarea id="why" style="min-height:140px">${esc(S.sel.c)}</textarea>
+  <div id="sbody" ${S.sel.coi === 'none' ? '' : 'hidden'}>${indicators()}<div class="row between" style="margin-top:18px"><h2>Your scores</h2><span class="sub" style="font-size:14px">Whole number from 1 to 5 for each criterion</span></div>
+  ${CRIT.map((c, i) => `<div class="crit"><div class="head"><span>${c[0]}</span><span class="tag">Weight ${c[1]}</span></div><p class="sub" style="font-size:14px;margin:8px 0 0">${GUIDE[i]}</p>${rubric(i)}<div class="pick" role="group" aria-label="${c[0]}">${[1, 2, 3, 4, 5].map(k => `<button data-i="${i}" data-k="${k}" aria-pressed="${v[i] === k}">${k}</button>`).join('')}<span class="sub pts" id="pt${i}">${((v[i] / 5) * c[1]).toFixed(0)} / ${c[1]} points</span></div>${ENDS}</div>`).join('')}
+  <label for="why">Strengths and evidence supporting your scores</label><p class="sub" style="font-size:14px;margin:0 0 6px">One box for all six criteria. Give the strengths you found and the evidence that supports each score.</p><textarea id="why" style="min-height:140px">${esc(S.sel.c)}</textarea>
   <div class="note"><b>Tip:</b> Judge on evidence only. If you know a nominee personally or have a conflict of interest, choose the recusal option above and do not score them.</div>
-  <label class="note solid row" style="font-weight:400"><input type="checkbox" id="sign" style="width:auto"> I assessed this nomination impartially, with no conflict of interest, on the submitted and verified evidence.</label><p class="err" id="err"></p>
+  <label class="note solid row" style="font-weight:400"><input type="checkbox" id="sign" style="width:auto"> ${SIGNOFF_TEXT}</label><p class="err" id="err"></p>
   <div class="row between foot"><div><small class="sub">Your total</small><div class="total"><span id="tot">${total(v)}</span><span class="sub" style="font-size:16px;font-weight:400"> %</span></div></div><div class="row"><span class="note conf" id="conf" style="margin:0">After Save, a confirmation appears here</span><button class="btn dark" id="save">Save</button></div></div></div></section></div>`
   );
 }
@@ -226,4 +226,16 @@ function bindScore() {
       err(e.message);
     }
   };
+}
+
+// The handbook rubric for one criterion, folded away until the judge opens it.
+function rubric(i) {
+  const r = RUBRIC[i],
+    list = a => `<ul>${a.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
+  return `<details class="rubric"><summary>Show the rubric</summary><div class="eyebrow">Consider</div>${list(r.consider)}<div class="eyebrow">Guiding questions</div>${list(r.ask)}<div class="eyebrow">What each rating means</div><table class="scale" style="border:0">${r.levels.map((x, k) => `<tr><td><b>${k + 1}</b></td><td>${esc(x)}</td></tr>`).join('')}</table></details>`;
+}
+
+// The six cross-cutting indicators that inform every score.
+function indicators() {
+  return `<details class="note rubric" style="margin-top:14px"><summary><b>Cross-cutting indicators</b>: keep these in mind for every criterion</summary><div class="tw"><table><tr><th>Indicator</th><th>Key question</th></tr>${INDICATORS.map(x => `<tr><td>${esc(x[0])}</td><td>${esc(x[1])}</td></tr>`).join('')}</table></div></details>`;
 }

@@ -16,16 +16,16 @@ function moderationEditor() {
   <div class="grid side"><section class="card" style="margin-top:0"><h2>Nominees</h2><p class="sub" style="margin:0 0 8px">${S.d.moderation.length} of ${S.d.nominees.length} started</p><input id="mq" type="search" placeholder="Search name or college" value="${esc(S.mq || '')}" aria-label="Search nominees" style="margin-bottom:10px"><div id="top-mod">${pgd.items.map(x => `<button class="item" data-m="${esc(x.id)}" ${x.id === n.id ? 'aria-current="true"' : ''}><span class="iname">${esc(x.name)}</span><small class="istat ${S.d.moderation.some(y => y.nomineeId === x.id) ? 'done' : ''}">${S.d.moderation.some(y => y.nomineeId === x.id) ? 'Done' : 'Not started'}</small></button>`).join('') || '<p class="sub">No nominees match.</p>'}</div>${pager(pgd, true)}</section>
   <section class="card" style="margin-top:0"><div class="row between"><h2>${esc(n.name)}</h2><span class="sub">${r.wait ? 'Awaiting judges' : `Average ${r.avg.toFixed(1)} / 100 · Calculated: ${r.rec}`}</span></div>
   ${[
-    ['strengths', 'Strengths'],
-    ['evidence', 'Evidence'],
-    ['achievements', 'Achievements'],
+    ['strengths', 'Overall strengths'],
+    ['evidence', 'Evidence supporting recommendation'],
+    ['achievements', 'Significant achievements'],
   ]
     .map(
       f =>
         `<label for="m_${f[0]}">${f[1]}</label><textarea id="m_${f[0]}" ${ro() ? 'readonly' : ''}>${esc(m[f[0]])}</textarea>`,
     )
     .join('')}
-  <label for="m_outcome">Outcome</label><select id="m_outcome" ${ro() ? 'disabled' : ''}><option value="">Choose an outcome</option>${OUTCOMES.map(o => `<option ${m.outcome === o ? 'selected' : ''}>${o}</option>`).join('')}</select>
+  <label for="m_outcome">Recommended outcome</label><select id="m_outcome" ${ro() ? 'disabled' : ''}><option value="">Choose an outcome</option>${OUTCOMES.map(o => `<option ${String(m.outcome).toLowerCase() === o.toLowerCase() ? 'selected' : ''}>${o}</option>`).join('')}</select>
   ${ro() ? '' : '<div class="row" style="margin-top:14px"><button class="btn dark" id="msave">Save moderation notes</button></div>'}</section></div>`;
 }
 
