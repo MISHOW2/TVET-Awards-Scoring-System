@@ -31,6 +31,7 @@ function chrome() {
       forgetSession();
       S.helpTopic = null;
       S.role = null;
+      S.name = '';
       S.cred = '';
       S.confirmed = false;
       S.nom = null;

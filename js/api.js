@@ -53,6 +53,10 @@ async function load(quiet) {
   const go = async () => {
     const r = await post({ action: 'read', ...creds() });
     const d = S.d;
+    if (r.me) {
+      S.name = r.me; // a judge or auditor signs in with a code only: the sheet says who they are
+      S.role = r.role;
+    }
     setCats(r);
     d.settings = { ...d.settings, ...r.settings };
     d.judgeNames = r.judgeNames || [];

@@ -27,16 +27,6 @@ setInterval(bgRefresh, 120000);
     setTimeout(render, 0);
     return;
   }
-  await restoreSession();
-  if (!S.role)
-    await busy(async () => {
-      try {
-        const r = await post({ action: 'read' });
-        setCats(r);
-        S.d.judgeNames = r.judgeNames || [];
-        S.d.auditorNames = r.auditorNames || [];
-        Object.assign(S.d.settings, r.settings);
-      } catch (e) {}
-    });
+  await restoreSession(); // nothing is read before sign-in: no names are needed on the sign-in page
   render();
 })();

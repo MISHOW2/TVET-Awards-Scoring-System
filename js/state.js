@@ -8,7 +8,7 @@ const S = {
   tab: '',
   nom: null,
   mod: null,
-  mode: 'judge',
+  mode: 'code', // sign-in tab: 'code' (judge or auditor) or 'admin'
   err: '',
   sel: {},
   ps: 5, // rows per page in the long lists
@@ -30,8 +30,9 @@ const S = {
 // True when a web app address is configured; otherwise the app runs on in-memory demo data.
 const live = () => !!CONFIG.apiUrl;
 
-// What every request carries to prove who is asking: the admin PIN, or a judge/auditor name and code.
-const creds = () => (S.role === 'admin' ? { pin: S.cred } : { judge: S.name, code: S.cred });
+// What every request carries to prove who is asking: the admin PIN, or a judge/auditor's personal code.
+// The code alone identifies the person; the sheet sends back their name and role.
+const creds = () => (S.role === 'admin' ? { pin: S.cred } : { code: S.cred });
 
 // A page refresh does not sign anyone out. The sign-in lives in sessionStorage: it survives a refresh, is removed by
 // Sign out, and disappears when the tab or browser is closed. The sheet still checks the code on every request.
